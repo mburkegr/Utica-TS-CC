@@ -9,10 +9,17 @@ const result = await build({
   loader: { ".json": "json" }, legalComments: "none",
 });
 const js = result.outputFiles[0].text;
-const css = readFileSync("ui/styles.css", "utf8");
+// Leaflet's stylesheet is inlined (external CSS is blocked in the artifact). The rules that reference
+// remote PNGs (layers-control icon, default marker) are dropped: the GIS uses neither.
+const leafletCss = readFileSync("node_modules/leaflet/dist/leaflet.css", "utf8")
+  .replace(/\.leaflet-control-layers-toggle\s*\{[^}]*\}/g, "")
+  .replace(/\.leaflet-retina \.leaflet-control-layers-toggle\s*\{[^}]*\}/g, "")
+  .replace(/\.leaflet-default-icon-path\s*\{[^}]*\}/g, "");
+if (/url\((?!#)/.test(leafletCss)) throw new Error("leaflet.css still references an external asset");
+const css = readFileSync("ui/styles.css", "utf8") + "\n" + readFileSync("ui/gis/gis.css", "utf8") + "\n" + leafletCss;
 const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Utica Deal Model</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Utica</title>
 <style>${css}</style>
 <meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

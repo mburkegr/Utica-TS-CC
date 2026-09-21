@@ -1,0 +1,132 @@
+/* ---------------------------------------------------------------------------
+   GIS module. Map colors are tokens resolved at render time by the map adapter
+   (gis/map/style.ts), so layers follow light/dark like the rest of the app.
+   Phase-window fills are a muted categorical set in geological order; none of
+   them is meant to read as good/bad. Reference lines stay above the fills.
+   --------------------------------------------------------------------------- */
+:root{
+  --gis-county-line:var(--slate-600);--gis-county-fill:var(--sky-500);
+  --gis-township-line:var(--sky-700);--gis-township-fill:var(--sky-500);
+  --gis-phase-oil-line:#7E6A45;--gis-phase-oil-fill:#C9B48F;
+  --gis-phase-rich-line:#6F5474;--gis-phase-rich-fill:#B9A3B8;
+  --gis-phase-cond-line:#4F7290;--gis-phase-cond-fill:#A9BCC9;
+  --gis-phase-lean-line:#4E8070;--gis-phase-lean-fill:#A3C2B5;
+  --gis-phase-wet-line:#8A6058;--gis-phase-wet-fill:#C8A9A2;
+  --gis-phase-dry-line:#5F5F6E;--gis-phase-dry-fill:#B7B7BF;
+  --gis-phase-other-line:var(--grey-500);--gis-phase-other-fill:var(--grey-300);
+  --gis-highlight-line:var(--navy-500);--gis-highlight-fill:var(--sky-500);
+  --gis-tc-line:var(--navy-600);--gis-tc-fill:var(--navy-300);--gis-label-tc-text:#FFFFFF;--gis-label-tc-bg:var(--navy-600);--gis-label-tc-ring:rgba(255,255,255,.85);
+  --gis-label-county:var(--slate-700);--gis-label-township:var(--sky-800);--gis-label-halo:rgba(255,255,255,.85);
+  --gis-map-bg:var(--sky-200);--gis-map-grid:var(--pale-500);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --gis-county-line:var(--pale-300);--gis-county-fill:var(--sky-500);
+    --gis-township-line:var(--sky-500);--gis-township-fill:var(--sky-500);
+    --gis-phase-oil-line:#E8D4A8;--gis-phase-oil-fill:#B9A47F;
+    --gis-phase-rich-line:#E0C6DF;--gis-phase-rich-fill:#A78FA6;
+    --gis-phase-cond-line:#CDDEEC;--gis-phase-cond-fill:#8FA6B8;
+    --gis-phase-lean-line:#C8E4D6;--gis-phase-lean-fill:#89AA9C;
+    --gis-phase-wet-line:#EDCFC8;--gis-phase-wet-fill:#B0918A;
+    --gis-phase-dry-line:#D9D9E2;--gis-phase-dry-fill:#9A9AA6;
+    --gis-phase-other-line:var(--grey-400);--gis-phase-other-fill:var(--grey-600);
+    --gis-highlight-line:var(--pale-100);--gis-highlight-fill:var(--sky-500);
+    --gis-tc-line:var(--pale-200);--gis-tc-fill:var(--sky-400);--gis-label-tc-text:var(--navy-900);--gis-label-tc-bg:var(--pale-200);--gis-label-tc-ring:rgba(18,26,36,.85);
+    --gis-label-county:var(--pale-100);--gis-label-township:var(--sky-300);--gis-label-halo:rgba(10,12,14,.85);
+    --gis-map-bg:#121A24;--gis-map-grid:#1E2A38;
+  }
+}
+:root[data-theme="dark"]{
+  --gis-county-line:var(--pale-300);--gis-county-fill:var(--sky-500);
+  --gis-township-line:var(--sky-500);--gis-township-fill:var(--sky-500);
+  --gis-phase-oil-line:#E8D4A8;--gis-phase-oil-fill:#B9A47F;
+  --gis-phase-rich-line:#E0C6DF;--gis-phase-rich-fill:#A78FA6;
+  --gis-phase-cond-line:#CDDEEC;--gis-phase-cond-fill:#8FA6B8;
+  --gis-phase-lean-line:#C8E4D6;--gis-phase-lean-fill:#89AA9C;
+  --gis-phase-wet-line:#EDCFC8;--gis-phase-wet-fill:#B0918A;
+  --gis-phase-dry-line:#D9D9E2;--gis-phase-dry-fill:#9A9AA6;
+  --gis-phase-other-line:var(--grey-400);--gis-phase-other-fill:var(--grey-600);
+  --gis-highlight-line:var(--pale-100);--gis-highlight-fill:var(--sky-500);
+  --gis-tc-line:var(--pale-200);--gis-tc-fill:var(--sky-400);--gis-label-tc-text:var(--navy-900);--gis-label-tc-bg:var(--pale-200);--gis-label-tc-ring:rgba(18,26,36,.85);
+  --gis-label-county:var(--pale-100);--gis-label-township:var(--sky-300);--gis-label-halo:rgba(10,12,14,.85);
+  --gis-map-bg:#121A24;--gis-map-grid:#1E2A38;
+}
+
+/* Frame: the GIS main column is a fixed-height stage so the map fills it. */
+.app[data-module="gis"] .main{display:flex;flex-direction:column;height:100vh;min-height:0}
+.app[data-module="gis"] .topbar{position:static;flex:none}
+.gis-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gis-toolbar .btn{padding:6px 11px;font-size:12px}
+.gis-stage{flex:1;position:relative;min-height:0;background:var(--gis-map-bg)}
+.gis-map{position:absolute;inset:0;background:var(--gis-map-bg)}
+/* Leaflet adds .leaflet-container to the same element, so the compound selector is needed to beat its own background rule. */
+.gis-map.leaflet-container,.gis-map .leaflet-container{background:var(--gis-map-bg)!important;font-family:var(--font-sans);font-size:12px}
+.gis-map.leaflet-container:focus{outline:none}
+.gis-overlay{position:absolute;left:0;right:0;top:0;display:flex;justify-content:center;padding:14px;pointer-events:none;z-index:1000}
+.gis-overlay .banner{pointer-events:auto;max-width:60ch;box-shadow:0 10px 30px -14px rgba(0,0,0,.5)}
+
+/* Rail layer panel */
+.gis-rail{display:flex;flex-direction:column;gap:2px;padding:4px 10px 8px;overflow:auto;min-height:0}
+.gis-rail h4{margin:10px 8px 4px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rail-muted)}
+.gis-layer{display:flex;flex-direction:column;border-radius:8px;padding:6px 8px 6px 10px}
+.gis-layer:hover{background:var(--rail-active)}
+.gis-layer-row{display:flex;align-items:center;gap:8px}
+.gis-layer-row label{display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;color:var(--rail-text);font-size:13px;font-weight:500;min-width:0}
+.gis-layer-row label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gis-layer-row input[type=checkbox]{accent-color:var(--sky-500);margin:0}
+.gis-layer-meta{color:var(--rail-muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gis-layer-meta.err{color:var(--stale)}
+.gis-icon-btn{border:none;background:none;color:var(--rail-muted);cursor:pointer;padding:2px 4px;border-radius:5px;font-size:13px;line-height:1}
+.gis-icon-btn:hover:not(:disabled){color:var(--rail-text);background:rgba(255,255,255,.08)}.gis-icon-btn:disabled{opacity:.35;cursor:default}
+.gis-sub{display:flex;align-items:center;gap:8px;margin:6px 0 2px 23px;color:var(--rail-muted);font-size:12px;cursor:pointer}
+.gis-sub input[type=checkbox]{accent-color:var(--sky-500);width:13px;height:13px;margin:0}
+.gis-legend{display:flex;flex-direction:column;gap:3px;margin:6px 0 2px 23px}
+.gis-legend-row{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--rail-muted)}
+.gis-swatch{width:18px;height:11px;border-radius:2px;flex:none;box-sizing:border-box}
+.gis-swatch.line{height:0;border-top-width:2px;border-top-style:solid;border-radius:0}
+.gis-swatch.dashed{border-top-style:dashed}
+.gis-empty{margin:2px 8px 6px;color:var(--rail-muted);font-size:11.5px;line-height:1.45}
+.rail .gis-rail .spinner{border-color:rgba(255,255,255,.25);border-top-color:var(--sky-500)}
+
+/* Map labels: divIcon markers centered on the polygon anchor. */
+.leaflet-marker-icon.gis-label{background:none;border:none;box-shadow:none;width:auto!important;height:auto!important;margin:0!important;pointer-events:none}
+.gis-label span{display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--font-sans);font-weight:700;text-shadow:0 0 3px var(--gis-label-halo),0 0 3px var(--gis-label-halo),0 1px 2px var(--gis-label-halo)}
+.gis-label-county span{color:var(--gis-label-county);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase}
+.gis-label-township span{color:var(--gis-label-township);font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.gis-label-tc span{color:var(--gis-label-tc-text);background:var(--gis-label-tc-bg);font-size:12px;font-weight:700;line-height:1;padding:4px 6px;min-width:22px;text-align:center;border-radius:11px;box-shadow:0 0 0 1.5px var(--gis-label-tc-ring),0 4px 10px -4px rgba(0,0,0,.5);text-shadow:none;font-variant-numeric:tabular-nums}
+
+/* Popups */
+.gis-popup .leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border-radius:10px;box-shadow:0 12px 30px -12px rgba(0,0,0,.45);border:1px solid var(--line)}
+.gis-popup .leaflet-popup-tip{background:var(--card)}
+.gis-popup .leaflet-popup-content{margin:10px 14px 10px;line-height:1.35;font-size:12px}
+.gis-popup .leaflet-popup-close-button{color:var(--muted)}
+.gis-popup-body section+section{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.gis-popup-layer{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.gis-popup-title{font-weight:700;font-size:13px;color:var(--text);margin:1px 0 3px}
+.gis-popup-body dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:0}
+.gis-popup-body dt{color:var(--muted)}.gis-popup-body dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+
+/* Detail drawer */
+.gis-detail{position:absolute;top:12px;right:12px;bottom:12px;width:330px;max-width:calc(100% - 24px);overflow:auto;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px -20px rgba(0,0,0,.45);z-index:1000;display:flex;flex-direction:column}
+.gis-detail-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.gis-detail-head h3{margin:0;font-size:14px;flex:1}
+.gis-detail-tabs{display:flex;gap:4px;padding:8px 10px 0;flex-wrap:wrap}
+.gis-detail-tab{border:1px solid var(--line-strong);background:var(--card);color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+.gis-detail-tab.active{background:linear-gradient(180deg,var(--btn-primary-bg),var(--btn-primary-bg2));color:var(--btn-primary-text);border-color:var(--btn-primary-bg2)}
+.gis-detail-body{padding:10px 12px 12px;overflow:auto}
+.gis-detail-body h4{margin:0 0 2px;font-size:15px}
+.gis-detail-body .kicker{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.gis-attrs{width:100%;font-size:12px;border-collapse:collapse}
+.gis-attrs th{position:static;background:none;color:var(--muted);font-weight:500;text-align:left;padding:4px 6px 4px 0;box-shadow:none;width:45%}
+.gis-attrs td{padding:4px 0;text-align:right;font-variant-numeric:tabular-nums;word-break:break-word}
+.gis-detail-actions{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+.gis-detail-actions .btn{padding:5px 10px;font-size:12px}
+
+/* Leaflet controls on theme tokens */
+.gis-map .leaflet-bar{border:1px solid var(--line);box-shadow:0 8px 20px -12px rgba(0,0,0,.4);border-radius:8px;overflow:hidden}
+.gis-map .leaflet-bar a{background:var(--card);color:var(--text);border-bottom-color:var(--line);width:30px;height:30px;line-height:30px}
+.gis-map .leaflet-bar a:hover{background:var(--row-hover)}
+.gis-map .leaflet-bar a.leaflet-disabled{color:var(--muted);background:var(--surface-alt)}
+.gis-map .leaflet-control-scale-line{background:var(--card);color:var(--text);border-color:var(--line-strong);opacity:.9}
+.gis-map .leaflet-container a{color:var(--teal)}
+@media(max-width:900px){.app[data-module="gis"] .main{height:auto}.gis-stage{height:70vh}.gis-detail{width:min(330px,calc(100% - 24px))}}

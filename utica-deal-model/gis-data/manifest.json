@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "note": "Browser-facing GIS datasets. `file` is the EPSG:4326 GeoJSON tracked in this repo; `sha256` is its digest; `asset` is where the published artifact serves it (filled by gis-data/scripts/manifest.mjs after upload). Layers with an empty asset url show as 'not published' in the GIS panel.",
+  "layers": {
+    "counties": {
+      "file": "gis-data/base/Utica_Area_Counties_2025.geojson",
+      "sha256": "234f0ca0b68ca6385ee9809c9a9773f0609743f0aff60cda31dc043e5e822fe2",
+      "asset": {
+        "id": "779c62d27b0e5c70537cb4b42bf13427",
+        "url": "/_blob/779c62d27b0e5c70537cb4b42bf13427"
+      }
+    },
+    "townships": {
+      "file": "gis-data/base/Utica_Area_Townships_Only_2025.geojson",
+      "sha256": "a2b15aa154075eceb35f13516ce7337959c4f2fd0051824c58709a04b27c837b",
+      "asset": {
+        "id": "5138e146935e8180f4d34441ee0c0dcb",
+        "url": "/_blob/5138e146935e8180f4d34441ee0c0dcb"
+      }
+    },
+    "phase_windows": {
+      "file": "gis-data/base/OH_TC_Areas_EPSG4326.geojson",
+      "sha256": "5fbc162245908aba73a5b2e9f724bd3e34f09960a3b3d186b9a7c9302f25fc7f",
+      "asset": {
+        "id": "96ba403540f9fa193644ee1f2dc81b01",
+        "url": "/_blob/96ba403540f9fa193644ee1f2dc81b01"
+      }
+    },
+    "tc_areas": {
+      "file": "gis-data/layers/Utica_TC_Areas_09212026_EPSG4326.geojson",
+      "sha256": "8a7e6f6c64c02a7f07a5840300aa1818e0c92d14d00235d56a562fe3e1cc6b6b",
+      "asset": {
+        "id": "dcf8b2737fb80d98fce2c994d403a7f3",
+        "url": "/_blob/dcf8b2737fb80d98fce2c994d403a7f3"
+      }
+    }
+  }
+}

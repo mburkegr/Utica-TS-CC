@@ -24,7 +24,17 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "costs", label: "Costs & Taxes" }, { key: "carry", label: "Carry & Dale" }, { key: "results", label: "Results" }, { key: "sensitivities", label: "Sensitivities" },
 ];
 
-export function App({ data, initial, restoreDraft = true }: { data: EngineData; initial?: AppState; restoreDraft?: boolean }) {
+export interface AppBrand { title: string; subtitle: string }
+const DEFAULT_BRAND: AppBrand = { title: "Utica Deal Model", subtitle: "Acreage underwriting" };
+
+/**
+ * Deal Model module. `moduleNav` and `hidden` are shell hooks only: the shell
+ * renders the module switch under the brand and hides this module (keeping its
+ * state mounted) while another module is active. No behavior below changes.
+ */
+export function App({ data, initial, restoreDraft = true, moduleNav, hidden = false, brand = DEFAULT_BRAND }: {
+  data: EngineData; initial?: AppState; restoreDraft?: boolean; moduleNav?: React.ReactNode; hidden?: boolean; brand?: AppBrand;
+}) {
   const [state, dispatch] = React.useReducer(reducer, undefined, () => {
     const base = initial ?? initialState(data.priceDeck);
     if (initial || !restoreDraft) return base;
@@ -70,9 +80,10 @@ export function App({ data, initial, restoreDraft = true }: { data: EngineData; 
   const visited = (k: TabKey) => (k === "results" || k === "sensitivities" ? Boolean(r) : true);
   return (
     <AppContext.Provider value={{ state, dispatch, data, tcOptions, busy, setBusy }}>
-      <div className="app">
+      <div className={`app${hidden ? " hidden" : ""}`} data-module="deal" aria-hidden={hidden || undefined}>
         <aside className="rail">
-          <div className="brand"><Logo size={134} /><div className="brand-text">Utica Deal Model<small>Acreage underwriting</small></div></div>
+          <div className="brand"><Logo size={134} /><div className="brand-text">{brand.title}<small>{brand.subtitle}</small></div></div>
+          {moduleNav}
           <div className="rail-run"><button className="btn primary run" data-testid="run-model" onClick={runModel} disabled={busy !== null}>{running ? "Running..." : "Run Model"}</button></div>
           <div className="rail-status">
             {busy ? <span className="running"><span className="spinner" /> {busy === "base" ? "Base model" : busy}</span>
