@@ -1,21 +1,25 @@
-# Utica Deal Model
+# Utica platform
 
-A deterministic oil-and-gas acreage deal model: a TypeScript calculation engine
-reconciled against the original Python/Streamlit model, plus a React interface
-delivered as a single self-contained HTML artifact.
+One self-contained HTML artifact hosting peer modules: the **Deal Model** (a
+deterministic TypeScript engine reconciled against the original Python/Streamlit
+model, plus its React interface) and **GIS** (Leaflet map over EPSG:4326
+reference geography with a registry-driven Layer Library). See
+`ARCHITECTURE_GIS.md` for the GIS design.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
 | `engine/` | The calculation engine (17 modules). No UI imports. Public surface is `engine/index.ts`. |
-| `ui/` | React interface. Imports the engine only through `engine/index`. |
-| `tests/` | 20 test programs: Python-fixture reconciliation, regressions, UI integration. |
+| `ui/` | React interface. Imports the engine only through `engine/index`. `ui/shell/` is the master `Deal Model | GIS` navigation; `ui/gis/` the GIS module. |
+| `gis/` | Framework-free GIS library: layer registry, loaders, geometry, map adapter. No engine or React imports. |
+| `gis-data/` | Browser-ready GeoJSON (`base/` reference layers, `layers/` optional datasets), `manifest.json` with published asset ids, maintenance script. |
+| `tests/` | 25 test programs: Python-fixture reconciliation, regressions, UI integration, master shell, GIS data/registry/store/UI. |
 | `data/` | Type-curve library and price deck exported from the source workbooks as JSON. |
 | `diagnostics/` | `compare_inputs.ts`: runs a deal in full-life and 360-month parity mode and diffs the monthly cash flows against a Python audit export. |
 | `harness/` | Python harness that generated the golden fixtures from the pinned reference model. |
 | `fixtures/` | `utica_fixtures.zip`: the golden fixture set (14 cases, L00-L12 exports, manifests). |
-| `dist/` | The built artifact. |
+| `dist/` | The built artifact (`index.html`), published with `capabilities: {downloads: true, assets: {}}`. |
 
 ## Commands
 
