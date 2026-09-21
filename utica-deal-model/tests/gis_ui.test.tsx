@@ -11,7 +11,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { AppShell } from "../ui/shell/AppShell";
 import { initialState } from "../ui/state/defaults";
 import { deck, lib } from "./adapters";
-import { LAYER_REGISTRY, LayerStore, type MapAdapter, type MapAdapterEvents, type LayerDefinition, type LayerData, type Selection, type Bbox, type Position } from "../gis/index";
+import { LAYER_REGISTRY, LayerStore, labelAnchor, unitStatusLabel, type MapAdapter, type MapAdapterEvents, type LayerDefinition, type LayerData, type Selection, type Bbox, type Position } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -86,11 +86,23 @@ async function main() {
   await waitFor(() => { if (adapter.layers.get("opt.odnr_units") == null) throw new Error("units not on map"); }, { timeout: 10000 });
   check("toggling ODNR Units lazy-loads all 789 units and places them on the map", store.get("opt.odnr_units").state === "ready" && /5 layers · 1,016 features/.test(screen.getByTestId("gis-status").textContent ?? ""), screen.getByTestId("gis-status").textContent ?? "");
   check("ODNR Units draws unlabeled", adapter.labels.get("opt.odnr_units") == null && document.querySelector('[data-testid="label-toggle-opt.odnr_units"]') === null);
-  check("ODNR Units legend shows the three status classes", screen.getByTestId("legend-opt.odnr_units").querySelectorAll(".gis-legend-row").length === 3);
+  const legendLabels = [...screen.getByTestId("legend-opt.odnr_units").querySelectorAll(".gis-legend-row")].map((r) => r.textContent);
+  check("ODNR Units legend shows the four expanded ODNR status names", legendLabels.join("|") === "Pending|Effective|Chief's Order Issued|No Longer Effective", legendLabels.join("|"));
   act(() => adapter.click([-81.1761460636001, 40.43147027485477]));
   await waitFor(() => { if (adapter.highlight?.layerId !== "opt.odnr_units") throw new Error("unit not primary"); });
   check("clicking inside a unit identifies the unit first, with the reference layers as tabs", screen.getByTestId("selection-title").textContent === "Bowerston North" && screen.getByTestId("selection-tab-ref.counties") !== null);
   check("unit popup carries operator, order, status, formation and acreage", ["Operator", "Order no.", "Status", "Formation", "Acres"].every((l) => new RegExp(`${l.replace(".", "\\.")}</dt>`).test(adapter.popup ?? "")) && /Operator<\/dt><dd>EOG Ohio/.test(adapter.popup ?? "") && /Acres<\/dt><dd>866/.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150));
+  check("unit popup shows the expanded status, not the raw code", /Status<\/dt><dd>Effective</.test(adapter.popup ?? ""), adapter.popup?.match(/Status<\/dt><dd>[^<]*/)?.[0]);
+
+  // A Gulfport unit: the popup and drawer show the canonical operator, the drawer's raw attribute list keeps the filed value.
+  const gulfport = (store.get("opt.odnr_units") as { state: "ready"; data: LayerData }).data.collection.features.find((f) => f.properties!.OPERATOR === "Gulfport Energy Transferred to Gulfport Appalachia")!;
+  act(() => adapter.click(labelAnchor(gulfport.geometry)!));
+  await waitFor(() => { if (adapter.highlight?.layerId !== "opt.odnr_units") throw new Error("gulfport unit not primary"); });
+  check("a Gulfport unit displays the canonical operator", /Operator<\/dt><dd>Gulfport Appalachia</.test(adapter.popup ?? ""), adapter.popup?.match(/Operator<\/dt><dd>[^<]*/)?.[0]);
+  const panelText = screen.getByTestId("feature-panel").textContent ?? "";
+  check("the detail drawer keeps the operator name as ODNR filed it", panelText.includes("Gulfport Energy Transferred to Gulfport Appalachia") && panelText.includes("Gulfport Appalachia"));
+  const rawStatus = String(gulfport.properties!.STATUS);
+  check("the detail drawer keeps the raw status code alongside the expanded name", panelText.includes(`STATUS${rawStatus}`) && panelText.includes(`Status${unitStatusLabel(rawStatus)}`), `raw ${rawStatus} / shown ${unitStatusLabel(rawStatus)}`);
   fireEvent.click(screen.getByTestId("clear-selection"));
   fireEvent.click(screen.getByTestId("layer-toggle-opt.odnr_units"));
   await waitFor(() => { if (adapter.layers.get("opt.odnr_units") != null) throw new Error("units still on"); });

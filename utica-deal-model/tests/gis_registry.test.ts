@@ -1,6 +1,6 @@
 /** Layer registry: consistent definitions, every asset key resolves through the manifest, every style token is defined for light and dark, legend order covers the phase classes. */
 import * as fs from "node:fs"; import * as path from "node:path";
-import { LAYER_REGISTRY, REFERENCE_LAYERS, OPTIONAL_LAYERS, PHASE_ORDER, UNIT_STATUS_ORDER, getLayer, validateRegistry, styleTokens, layersInDrawOrder, legendFor, phaseOf, regionOf, resolveSourceUrl } from "../gis/index";
+import { LAYER_REGISTRY, REFERENCE_LAYERS, OPTIONAL_LAYERS, PHASE_ORDER, UNIT_STATUS_ORDER, UNIT_STATUS_LABELS, OPERATOR_ALIASES, getLayer, validateRegistry, styleTokens, layersInDrawOrder, legendFor, phaseOf, regionOf, unitStatusLabel, operatorOf, resolveSourceUrl } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -24,8 +24,22 @@ check("phase classifier strips region and merges Dry Gas East/West", phaseOf("No
 const units = getLayer("opt.odnr_units");
 check("ODNR Units: canvas renderer, unlabeled, drawn and selected above the type curve areas", units.renderer === "canvas" && units.label === undefined && units.zIndex > getLayer("opt.tc_areas").zIndex && units.selectionPriority > getLayer("opt.tc_areas").selectionPriority);
 check("ODNR Units: identity UNIT_ID, name UNIT_NAME, category units", units.idField === "UNIT_ID" && units.nameField === "UNIT_NAME" && units.category === "units");
-check("ODNR Units legend lists the three status codes in order", legendFor(units).map((e) => e.key).join("|") === UNIT_STATUS_ORDER.join("|"));
+check("ODNR Units legend is keyed on the raw status codes in process order", legendFor(units).map((e) => e.key).join("|") === UNIT_STATUS_ORDER.join("|"));
 check("ODNR Units popup carries operator, order, status, formation, acres and vintage", units.popup.fields.map((f) => f.key).join(",") === "OPERATOR,ORDER_NO,STATUS,FORMATION,ACRES,EDIT_DATE");
+
+// Status: the raw code keys the style; every reader-facing surface shows the official ODNR expansion.
+check("legend shows the expanded ODNR status names, not the codes", legendFor(units).map((e) => e.label).join("|") === "Pending|Effective|Chief's Order Issued|No Longer Effective", legendFor(units).map((e) => e.label).join("|"));
+check("status expansions match the ODNR mappings", unitStatusLabel("PEN") === "Pending" && unitStatusLabel("EFF") === "Effective" && unitStatusLabel("COI") === "Chief's Order Issued" && unitStatusLabel("NLE") === "No Longer Effective");
+check("status lookup tolerates case and padding, and passes an unknown code through", unitStatusLabel(" eff ") === "Effective" && unitStatusLabel("XYZ") === "XYZ" && unitStatusLabel("") === "Unknown" && unitStatusLabel(null) === "Unknown");
+check("the popup derives the expanded status and leaves STATUS untouched", units.popup.fields.find((f) => f.key === "STATUS")!.derive!({ STATUS: "COI" }) === "Chief's Order Issued");
+check("NLE is registered with a style although the current extract has none", Object.keys(UNIT_STATUS_LABELS).every((c) => (units.style as any).classes[c]) && (units.style as any).classes.NLE.dashArray !== undefined);
+
+// Operator: an alias map, not an edit to the source. Aliases are approved explicitly, never inferred.
+check("approved operator aliases canonicalize", operatorOf("Gulfport Energy Transferred to Gulfport Appalachia") === "Gulfport Appalachia" && operatorOf("Gulfport Appalachia") === "Gulfport Appalachia" && operatorOf("Gulfport Energy") === "Gulfport Appalachia" && operatorOf("INR Onio") === "INR Ohio" && operatorOf("INR Ohio") === "INR Ohio");
+check("operator matching ignores case and collapses whitespace", operatorOf("  gulfport   energy  ") === "Gulfport Appalachia" && operatorOf("inr onio") === "INR Ohio");
+check("an unaliased operator passes through as filed", operatorOf("Ascent") === "Ascent" && operatorOf("EOG Resources") === "EOG Resources" && operatorOf("OG Resources") === "OG Resources" && operatorOf("Tiburon") === "Tiburon");
+check("the alias map holds only the five approved entries", Object.keys(OPERATOR_ALIASES).length === 5, Object.keys(OPERATOR_ALIASES).join(" | "));
+check("the popup derives the canonical operator and leaves OPERATOR untouched", units.popup.fields.find((f) => f.key === "OPERATOR")!.derive!({ OPERATOR: "Gulfport Energy" }) === "Gulfport Appalachia");
 
 // Style tokens defined in ui/gis/gis.css for light, system dark and forced dark.
 const css = fs.readFileSync(path.join(root, "ui/gis/gis.css"), "utf8");

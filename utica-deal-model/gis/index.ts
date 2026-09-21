@@ -1,7 +1,7 @@
 /** Public surface of the GIS library (framework-free). UI code imports only from here. */
 export type * from "./layers/types";
 export type { Feature, FeatureCollection, Geometry, Position } from "./layers/geojsonTypes";
-export { LAYER_REGISTRY, REFERENCE_LAYERS, OPTIONAL_LAYERS, PHASE_ORDER, UNIT_STATUS_ORDER, getLayer, layersInDrawOrder, styleTokens, validateRegistry, phaseOf, regionOf, type ManifestLike } from "./layers/registry";
+export { LAYER_REGISTRY, REFERENCE_LAYERS, OPTIONAL_LAYERS, PHASE_ORDER, UNIT_STATUS_ORDER, UNIT_STATUS_LABELS, OPERATOR_ALIASES, getLayer, layersInDrawOrder, styleTokens, validateRegistry, phaseOf, regionOf, unitStatusLabel, operatorOf, type ManifestLike } from "./layers/registry";
 export { LayerStore, type LayerStatus, type StoreListener } from "./data/layerStore";
 export { loadLayer, indexCollection, resolveSourceUrl, LayerLoadError, type FetchLike } from "./data/loaders";
 export { bboxOfCollection, bboxOfGeometry, unionBbox, padBbox, bboxWithin, labelAnchor, pointInGeometry, validateCollection, featureId, OHIO_REGION_BBOX, type Bbox, type ValidationIssue } from "./geo/geometry";

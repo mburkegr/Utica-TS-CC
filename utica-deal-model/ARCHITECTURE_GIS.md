@@ -144,9 +144,36 @@ drawer shows every attribute (including `Shape_Area`).
 unlabeled, `selectionPriority` 50 and `zIndex` 50 so a unit draws over the type
 curve areas and identifies first. It is the one `renderer: "canvas"` layer;
 789 interactive SVG paths make panning sluggish, and the units carry no labels,
-which is what SVG would otherwise buy. Styled categorically on `STATUS`
-(`EFF` / `PEN` / `COI`), so pending units read differently from effective ones.
+which is what SVG would otherwise buy. Styled categorically on `STATUS`, so
+pending units read differently from effective ones.
 Popup: OPERATOR, ORDER_NO, STATUS, FORMATION, ACRES, EDIT_DATE.
+
+**Codes in, names out.** The tracked GeoJSON holds what ODNR filed; the
+registry translates at display time, so no lookup is ever baked into the data.
+
+`UNIT_STATUS_LABELS` maps the order status to its official ODNR expansion:
+`PEN` Pending, `EFF` Effective, `COI` Chief's Order Issued, `NLE` No Longer
+Effective. The legend, popup and drawer show the expansion; `STATUS` keeps the
+raw code, which is also what keys the style. Legend order follows an
+application through the process. `NLE` has no features in the current extract
+but is registered with a style, dashed as well as grey so "no longer
+effective" reads as inactive without relying on hue alone, so a refresh that
+introduces it renders properly instead of dropping to the fallback. An
+unrecognised code shows verbatim rather than being hidden.
+
+`OPERATOR_ALIASES` / `operatorOf` canonicalize the operator name, which ODNR
+files free-form: `Gulfport Energy Transferred to Gulfport Appalachia`,
+`Gulfport Appalachia` and `Gulfport Energy` all display as Gulfport
+Appalachia, and `INR Onio` as INR Ohio. Keys are the filed value,
+whitespace-collapsed and lower-cased. The canonical name is what display,
+legends and grouping use; `OPERATOR` itself is never rewritten and the
+drawer's full attribute list shows it as filed, so the 20 filed values reduce
+to 17 for display while the file still round-trips to the source.
+
+Aliases are added only on explicit approval. Two filed values look like they
+could be variants of others — `OG Resources` (1 unit, alongside 62
+`EOG Resources`) and `Tiburon` (1 unit, alongside 2 `Tiburon Oil and Gas
+Ohio`) — and are deliberately left unaliased rather than inferred.
 
 Provenance: ODNR Division of Oil and Gas Resources Management `Unitizations`
 shapefile, NAD83 / StatePlane Ohio South FIPS 3402 (US survey feet),
@@ -159,9 +186,8 @@ than EPSG:3735, whose false easting differs by ~1.2 m. Conversion notes:
 - `UNIT_ID` is a slug of the unit name, collision-suffixed. The source has no
   usable key: `OrderNo` is blank for 48 pending units and repeats across 7.
 - `OPERATOR` is the source `company` with whitespace collapsed (it embeds CR/LF
-  and non-breaking spaces). Operator names are otherwise left as filed, so
-  "Gulfport Energy / Transferred to Gulfport Appalachia" and "Gulfport
-  Appalachia" remain separate values, as does the "INR Onio" typo.
+  and non-breaking spaces). The name itself is left exactly as filed; variants
+  are reconciled at display time by `OPERATOR_ALIASES`, above, never here.
 - `FORMATION` is title-cased; the source mixes `Utica`/`UTICA`.
 - `ACRES` is the source `Shape_STAr` (projected ft²) over 43,560. `gis_data`
   re-derives area from the reprojected rings and fails if any unit disagrees by

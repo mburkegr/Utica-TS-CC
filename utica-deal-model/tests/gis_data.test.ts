@@ -4,7 +4,7 @@
  * every attribute the registry's popups and labels read, and matches its manifest digest.
  */
 import * as fs from "node:fs"; import * as path from "node:path"; import { createHash } from "node:crypto";
-import { LAYER_REGISTRY, validateCollection, indexCollection, bboxWithin, bboxOfGeometry, OHIO_REGION_BBOX, unionBbox, hitTest, labelAnchor, pointInGeometry, placeLabels, type Bbox, type FeatureCollection } from "../gis/index";
+import { LAYER_REGISTRY, validateCollection, indexCollection, bboxWithin, bboxOfGeometry, OHIO_REGION_BBOX, unionBbox, hitTest, labelAnchor, pointInGeometry, placeLabels, operatorOf, type Bbox, type FeatureCollection } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -65,6 +65,14 @@ const odnr = loaded.find((l) => l.def.id === "opt.odnr_units")!;
 const unitSpec = odnr.def.style as Extract<typeof odnr.def.style, { kind: "categorical" }>;
 const statuses = [...new Set(odnr.data.collection.features.map((f) => String(f.properties!.STATUS)))];
 check("every unit status maps to a legend class", statuses.every((s) => unitSpec.classes[s]), statuses.join("|"));
+check("the tracked file stores raw ODNR status codes, not expanded names", statuses.every((s) => /^[A-Z]{3}$/.test(s)), statuses.join("|"));
+
+// Operator canonicalization is a display-time map: the filed values stay in the tracked file.
+const rawOperators = [...new Set(odnr.data.collection.features.map((f) => String(f.properties!.OPERATOR)))];
+const canonical = [...new Set(rawOperators.map(operatorOf))];
+check("the tracked file keeps every operator name as filed", ["Gulfport Energy Transferred to Gulfport Appalachia", "Gulfport Appalachia", "Gulfport Energy", "INR Onio", "INR Ohio"].every((v) => rawOperators.includes(v)), `${rawOperators.length} filed values`);
+check("canonicalization merges the Gulfport and INR variants and nothing else", rawOperators.length === 20 && canonical.length === 17, `${rawOperators.length} filed → ${canonical.length} canonical`);
+check("no filed operator is dropped or blanked by canonicalization", canonical.every((c) => c.length > 0) && rawOperators.every((r) => canonical.includes(operatorOf(r))));
 const M_PER_DEG_LAT = 110574, M_PER_DEG_LON_AT = (lat: number) => 111320 * Math.cos((lat * Math.PI) / 180);
 const ringM2 = (ring: number[][], lat0: number) => {
   const kx = M_PER_DEG_LON_AT(lat0);
