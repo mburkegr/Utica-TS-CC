@@ -1,6 +1,6 @@
 # GIS / Map module: architecture
 
-Status: GIS v1 (reference geography plus the first Layer Library dataset, Type Curve Areas). Branch `feature/gis-v1`.
+Status: GIS v1 (reference geography, Type Curve Areas) plus the ODNR Units layer.
 
 ## 1. Master artifact navigation
 
@@ -39,7 +39,7 @@ Two layers, mirroring the engine/ui split:
 | `gis/format.ts` | Popup HTML and attribute formatting |
 | `gis/index.ts` | Public surface; `ui/` imports only from here (enforced by `tests/ui_boundary.test.ts`) |
 | `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
-| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (empty in v1), `manifest.json`, `scripts/manifest.mjs` |
+| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units), `manifest.json`, `scripts/manifest.mjs` |
 
 Data flow: `LayerStore.loadEager()` on first open → store status changes
 re-render `GisModule` → an effect reconciles the `MapAdapter` (`setLayer`,
@@ -88,9 +88,9 @@ interface LayerDefinition {
   source: { kind: "asset"; manifestKey } | { kind: "url"; url } | { kind: "inline"; elementId };
   loading: "eager" | "lazy";                // reference = eager, optional = lazy (validated)
   defaultVisible: boolean;                  // reference = true, optional = false (validated)
-  renderer: "svg" | "canvas";               // svg for polygons; canvas reserved for dense point layers
-  zIndex: number;                           // draw order; phase 10 < townships 20 < counties 30
-  idField; nameField; selectable; selectionPriority;   // townships 30 > counties 20 > phase 10
+  renderer: "svg" | "canvas";               // svg by default; canvas once a layer is dense (ODNR units)
+  zIndex: number;                           // draw order; phase 10 < townships 20 < counties 30 < tc 40 < units 50
+  idField; nameField; selectable; selectionPriority;   // units 50 > tc 40 > townships 30 > counties 20 > phase 10
   popup: { title(props), fields: [{ key, label, format?, derive? }] };
   label?: { field, derive?, defaultOn, toggleLabel?, minZoom?, className,
             avoidCollisions?, priority?, fontPx?, paddingPx? };
@@ -114,7 +114,7 @@ and categorical and does not encode quality or risk.
 
 | | Reference | Optional (Layer Library) |
 |---|---|---|
-| Examples | Counties, Townships, Phase windows | Type Curve Areas (shipped), Producing wells, Dale wells, Existing units, Pending unitizations, Estimated future units, Evaluation areas, Active opportunities, Ownership, Laterals, Operator datasets |
+| Examples | Counties, Townships, Phase windows | Type Curve Areas (shipped), ODNR Units (shipped), Producing wells, Dale wells, Estimated future units, Evaluation areas, Active opportunities, Ownership, Laterals, Operator datasets |
 | Loading | Eager on first GIS open, in parallel | Lazy on first toggle |
 | Default | Visible | Off |
 | Cache | Session | Session; `LayerStore.evict` available |
@@ -138,6 +138,38 @@ user zooms in. Anchors are the area-weighted centroid of the largest ring.
 click opens the TC polygon first with the reference layers as tabs. Popup:
 NAME, AOI, TC_NUMBER, SPACING, BASE_LL, OIL_EUR, GAS_EUR, CONFIDENCE; the
 drawer shows every attribute (including `Shape_Area`).
+
+**ODNR Units** (`opt.odnr_units`, `gis-data/layers/ODNR_Units_EPSG4326.geojson`,
+789 polygons) is the second Layer Library entry: off by default, lazy,
+unlabeled, `selectionPriority` 50 and `zIndex` 50 so a unit draws over the type
+curve areas and identifies first. It is the one `renderer: "canvas"` layer;
+789 interactive SVG paths make panning sluggish, and the units carry no labels,
+which is what SVG would otherwise buy. Styled categorically on `STATUS`
+(`EFF` / `PEN` / `COI`), so pending units read differently from effective ones.
+Popup: OPERATOR, ORDER_NO, STATUS, FORMATION, ACRES, EDIT_DATE.
+
+Provenance: ODNR Division of Oil and Gas Resources Management `Unitizations`
+shapefile, NAD83 / StatePlane Ohio South FIPS 3402 (US survey feet),
+reprojected to EPSG:4326 using the CRS in the shapefile's own `.prj` rather
+than EPSG:3735, whose false easting differs by ~1.2 m. Conversion notes:
+
+- Two exact duplicate rows in the source (Guthrie HN FRA East, order 2024-149,
+  and Guthrie HN FRA West, order 2025-14 — identical attributes and identical
+  geometry) are dropped, taking 791 records to 789 features.
+- `UNIT_ID` is a slug of the unit name, collision-suffixed. The source has no
+  usable key: `OrderNo` is blank for 48 pending units and repeats across 7.
+- `OPERATOR` is the source `company` with whitespace collapsed (it embeds CR/LF
+  and non-breaking spaces). Operator names are otherwise left as filed, so
+  "Gulfport Energy / Transferred to Gulfport Appalachia" and "Gulfport
+  Appalachia" remain separate values, as does the "INR Onio" typo.
+- `FORMATION` is title-cased; the source mixes `Utica`/`UTICA`.
+- `ACRES` is the source `Shape_STAr` (projected ft²) over 43,560. `gis_data`
+  re-derives area from the reprojected rings and fails if any unit disagrees by
+  more than 2%, which is the check that would catch a bad reprojection: wrong
+  CRS output can still validate as lon/lat inside the region bbox.
+- The ODNR editing fields `create_by` and `edit_by` (internal staff ids) are
+  dropped; `create_dat` is empty for every record. `edit_date` is kept as
+  `EDIT_DATE`, the data vintage.
 
 ## 6. Asset, loading and caching strategy
 

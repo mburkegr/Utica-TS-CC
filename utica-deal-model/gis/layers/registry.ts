@@ -76,6 +76,12 @@ export const REFERENCE_LAYERS: LayerDefinition[] = [
   },
 ];
 
+/** ODNR unitization order status codes, in the order the legend lists them. */
+export const UNIT_STATUS_ORDER = ["EFF", "PEN", "COI"] as const;
+const unitStatusClass = (key: string, token: string): PathStyle & { label: string } => ({
+  label: key, stroke: `--gis-unit-${token}-line` as StyleToken, weight: 1.6, opacity: 1, fill: `--gis-unit-${token}-fill` as StyleToken, fillOpacity: 0.18,
+});
+
 /** Optional layers (Layer Library). Off by default, lazy-loaded on first toggle, cached for the session. */
 export const OPTIONAL_LAYERS: LayerDefinition[] = [
   {
@@ -99,6 +105,29 @@ export const OPTIONAL_LAYERS: LayerDefinition[] = [
     },
     label: { field: "TC_NUMBER", defaultOn: true, className: "gis-label gis-label-tc", avoidCollisions: true, fontPx: 12, paddingPx: 4 },
     style: { kind: "static", legendLabel: "Type curve area", style: { stroke: "--gis-tc-line", weight: 1.6, opacity: 1, dashArray: "6 3", fill: "--gis-tc-fill", fillOpacity: 0.12 } },
+  },
+  {
+    id: "opt.odnr_units", name: "ODNR Units", category: "units", tier: "optional", geometry: "polygon",
+    source: { kind: "asset", manifestKey: "odnr_units" }, loading: "lazy", defaultVisible: false, renderer: "canvas",
+    zIndex: 50, idField: "UNIT_ID", nameField: "UNIT_NAME", selectable: true, selectionPriority: 50,
+    description: "Ohio unitization units ordered under ORC 1509.28 (789 polygons), colored by order status: EFF effective, PEN pending, COI. Canvas-rendered: at this feature count SVG paths make panning sluggish.",
+    attribution: "ODNR Division of Oil and Gas Resources Management, Unitizations shapefile (NAD83 Ohio South ftUS, reprojected to EPSG:4326)",
+    popup: {
+      title: (p) => String(p.UNIT_NAME ?? "Unit"),
+      fields: [
+        { key: "OPERATOR", label: "Operator", format: "text" },
+        { key: "ORDER_NO", label: "Order no.", format: "text" },
+        { key: "STATUS", label: "Status", format: "text" },
+        { key: "FORMATION", label: "Formation", format: "text" },
+        { key: "ACRES", label: "Acres", format: "integer" },
+        { key: "EDIT_DATE", label: "ODNR updated", format: "date" },
+      ],
+    },
+    style: {
+      kind: "categorical", field: "STATUS", order: [...UNIT_STATUS_ORDER],
+      classes: { EFF: unitStatusClass("EFF", "eff"), PEN: unitStatusClass("PEN", "pen"), COI: unitStatusClass("COI", "coi") },
+      fallback: { label: "Other", stroke: "--gis-unit-other-line", weight: 1.4, fill: "--gis-unit-other-fill", fillOpacity: 0.15 },
+    },
   },
 ];
 
