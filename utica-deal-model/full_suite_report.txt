@@ -1,0 +1,544 @@
+
+=== prepare (L00) reconciliation ===
+units compared: 42   passed: 42   failed: 0
+  PASS  C01     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C02     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C03     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C04     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C05     units=3 rows=    4  max|abs|=0  max rel=0
+  PASS  C06     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C07     units=3 rows=    5  max|abs|=0  max rel=0
+  PASS  C07-FL  units=3 rows=    5  max|abs|=0  max rel=0
+  PASS  C08     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C09a    units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C09b    units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C10     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows=    5  max|abs|=0  max rel=0
+  PASS  C12     units=3 rows=    5  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - acquisition-cost override removed: deal_settings.use_acquisition_override / acquisition_cost_override are not compared (all fixtures have it off)
+   - ngl_diff is not part of the engine and is excluded from the slot comparison
+   - flowbackDelay is validated as an integer >= 0 (0 accepted)
+
+=== pricing (L03) reconciliation ===
+units compared: 37   passed: 37   failed: 0
+  PASS  C01     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C02     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C03     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C04     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C05     units=3 rows= 1082  max|abs|=0  max rel=0
+  PASS  C06     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C07     units=4 rows= 1443  max|abs|=0  max rel=0
+  PASS  C07-FL  units=4 rows= 1683  max|abs|=0  max rel=0
+  PASS  C08     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C09a    units=2 rows=  724  max|abs|=0  max rel=0
+  PASS  C09b    units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C10     units=2 rows=  721  max|abs|=0  max rel=0
+  PASS  C11     units=4 rows= 1443  max|abs|=0  max rel=0
+  PASS  C12     units=4 rows= 1443  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - deck loaded from data/price_file_library.json (exported once from the workbook; same validation rules as the Python loader)
+   - file mode: month >= flat-start uses the terminal price; otherwise deck + (terminal - base) parallel shift; missing months raise
+   - flat mode ignores the 1900-01-01 placeholder switch dates
+
+=== ngl (L02) reconciliation ===
+units compared: 46   passed: 46   failed: 0
+  PASS  C01     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C02     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C03     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C04     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C05     units=4 rows=   12  max|abs|=0  max rel=0
+  PASS  C06     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C07     units=6 rows=   18  max|abs|=0  max rel=0
+  PASS  C07-FL  units=6 rows=   18  max|abs|=0  max rel=0
+  PASS  C08     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C09a    units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C09b    units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C10     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C11     units=6 rows=   18  max|abs|=0  max rel=0
+  PASS  C12     units=6 rows=   18  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - NGL_WTI_CALIBRATION_BASE = 70 kept as a named constant (intentional methodology)
+   - recovery table selected by ethaneRec; C02 exercises the recovery table, all other cases the rejection table
+   - sums accumulate in component order (ethane, propane, isobutane, butane, pentanes) to match pandas column sums
+
+=== ownership (L01) reconciliation ===
+units compared: 23   passed: 23   failed: 0
+  PASS  C01     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C05     units=2 rows=    2  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C07     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C07-FL  units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C08     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C09a    units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C09b    units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C10     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows=    3  max|abs|=0  max rel=0
+  PASS  C12     units=3 rows=    3  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - acquisition_cost = netAcres x bidPriceFinal only; the Python allocation branch for the deal-level acquisition override is not implemented (override removed by decision; all fixtures have it off)
+   - C03 exercises calc-unit-acres (480), pctUnitized 0.90 and 2 gross wells; C12 exercises the deal-level bid override
+
+=== well / production (L04) reconciliation ===
+units compared: 23   passed: 23   failed: 0
+  PASS  C01     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C05     units=2 rows=  722  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C07     units=3 rows= 1083  max|abs|=0  max rel=0
+  PASS  C07-FL  units=3 rows= 1083  max|abs|=0  max rel=0
+  PASS  C08     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C09a    units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C09b    units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C10     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows= 1083  max|abs|=0  max rel=0
+  PASS  C12     units=3 rows= 1083  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - full type curve run (360 months in this library); the 360-month master-calendar cutoff is not applied here by design
+   - shut-in: first period >= 1 with negative pre-shut-in operating CF, permanent; prices and capex are not zeroed
+   - gas: grossGasProduction is residue (post-shrink); grossNglProduction is theoretical yield on raw gas (pre-recovery)
+   - per-unit gas severance grossed up to wellhead volume via equityGas / (1 - shrink)
+   - net_revenue and opex alias columns are emitted only in the test adapter (aliases of total_revenue and variable_loe)
+   - shut-in: C01/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C02/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-06-01
+   - shut-in: C03/slot 1 (4_north_dry_gas): python shut-in none, ts none, terminal month 2057-03-01
+   - shut-in: C04/slot 1 (13_core_wet_gas_north): python shut-in 286, ts 286, terminal month 2050-10-01
+   - shut-in: C05/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C05/slot 2 (2_north_rich_cond): python shut-in none, ts none, terminal month 2057-04-01
+   - shut-in: C06/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C07/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C07/slot 2 (14_core_rich_condensate_north): python shut-in none, ts none, terminal month 2058-07-01
+   - shut-in: C07/slot 3 (4_north_dry_gas): python shut-in none, ts none, terminal month 2057-09-01
+   - shut-in: C07-FL/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C07-FL/slot 2 (14_core_rich_condensate_north): python shut-in none, ts none, terminal month 2058-07-01
+   - shut-in: C07-FL/slot 3 (4_north_dry_gas): python shut-in none, ts none, terminal month 2057-09-01
+   - shut-in: C08/slot 1 (28_south_oil): python shut-in 328, ts 328, terminal month 2054-04-01
+   - shut-in: C09a/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2056-06-01
+   - shut-in: C09b/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2056-09-01
+   - shut-in: C10/slot 1 (27_south_dry_gas): python shut-in 1, ts 1, terminal month 2026-10-01
+   - shut-in: C11/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C11/slot 2 (14_core_rich_condensate_north): python shut-in none, ts none, terminal month 2057-04-01
+   - shut-in: C11/slot 3 (7_core_condensate_north): python shut-in none, ts none, terminal month 2057-07-01
+   - shut-in: C12/slot 1 (1_north_cond_north): python shut-in none, ts none, terminal month 2057-01-01
+   - shut-in: C12/slot 2 (14_core_rich_condensate_north): python shut-in none, ts none, terminal month 2057-04-01
+   - shut-in: C12/slot 3 (7_core_condensate_north): python shut-in none, ts none, terminal month 2057-07-01
+
+=== layers (L05) reconciliation ===
+units compared: 23   passed: 23   failed: 0
+  PASS  C01     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C05     units=2 rows=  722  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C07     units=3 rows= 1083  max|abs|=0  max rel=0
+  PASS  C07-FL  units=3 rows= 1083  max|abs|=0  max rel=0
+  PASS  C08     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C09a    units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C09b    units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C10     units=1 rows=  361  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows= 1083  max|abs|=0  max rel=0
+  PASS  C12     units=3 rows= 1083  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - order: Dale initial (x of WI) -> Granite carry from period 1 -> scaling; D&C funded at GR-parties interest; first-well carry covers min(1, grossWells)
+   - slot_promote is always 0 in Python and is emitted only by the test adapter
+   - C06 exercises Dale + carry ordering with 2 gross wells; C07 pooled Dale; C05/C12 carry without Dale
+
+=== calendar (L06) parity, calendarMonths=360 reconciliation ===
+units compared: 18   passed: 18   failed: 0
+  PASS  C01     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C05     units=2 rows=  720  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C07     units=3 rows= 1080  max|abs|=0  max rel=0
+  PASS  C08     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C10     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows= 1080  max|abs|=0  max rel=0
+  PASS  C12     units=3 rows= 1080  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - Python duplicate (slot,date) rows from flowbackDelay=0 (C09a) are collapsed to month level in the fixture before comparison; the engine aggregates by month natively
+   - months without well data: numeric slot constants reproduce Python's fillna(0) artifact in the adapter only; the engine keeps true constants
+   - C09a: Python L06 has 366 rows; duplicated months [["2026-07-01",4]] (engine: one row per month)
+   - C09b: Python L06 has 363 rows; duplicated months [["2026-10-01",4]] (engine: one row per month)
+   - C07-FL: engine calculation horizon 2026-10-01 .. 2058-07-01 (382 months); fixture calendar has 600 months per slot
+
+=== calendar (L06) full-life vs C07-FL (P2 reference) reconciliation ===
+units compared: 3   passed: 3   failed: 0
+  PASS  C07-FL  units=3 rows= 1146  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - engine default horizon = last month of the latest slot's full curve; fixture rows beyond it are asserted to be all-zero flows
+
+=== calendar (L06) diagnostic (C09a, C09b: flowbackDelay = 0, expected divergence, not a parity result) reconciliation ===
+units compared: 2   passed: 0   failed: 2
+  FAIL  C09a    units=1 rows=  363  max|abs|=1.13e+7  max rel=5.00e-1
+  FAIL  C09b    units=1 rows=  360  max|abs|=1.13e+7  max rel=7.50e-1
+  --- C09a/slot_1: 47 mismatches 
+  --- C09b/slot_1: 48 mismatches 
+  assumptions / behavior notes:
+   - Python: left join duplicates the spud month (period 0 and period 1 rows), then the index-price re-merge duplicates again -> 4 rows; capex and first-month production are 2x in the rollup, acquisition 2x when spud = effective (C09b)
+   - engine: one row per month; flows summed once; acquisition booked once. Mismatches shown here are that divergence
+
+=== promote schedule (L07) parity reconciliation ===
+units compared: 11   passed: 11   failed: 0
+  PASS  C01     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C05     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=  360  max|abs|=3.73e-9  max rel=9.16e-16
+  PASS  C07     units=1 rows=  360  max|abs|=8.38e-9  max rel=1.46e-15
+  PASS  C08     units=1 rows=  360  max|abs|=6.98e-10  max rel=7.90e-16
+  PASS  C10     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C11     units=1 rows=    0  max|abs|=0  max rel=0
+  PASS  C12     units=1 rows=    0  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - C06 group UNIT-1: hurdle 2030-09-01, effective 2030-10-01, final multiple 1.5523
+   - C07 group POOL-A: hurdle 2032-05-01, effective 2032-06-01, final multiple 1.8230
+   - C07-FL group POOL-A: hurdle 2032-05-01, effective 2032-06-01, final multiple 1.8291
+   - C08 group UNIT-1: hurdle never, effective never, final multiple 0.7027
+
+=== promote applied to slots (L08) parity reconciliation ===
+units compared: 18   passed: 18   failed: 0
+  PASS  C01     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C05     units=2 rows=  720  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=  360  max|abs|=3.73e-9  max rel=9.16e-16
+  PASS  C07     units=3 rows= 1080  max|abs|=8.38e-9  max rel=1.46e-15
+  PASS  C08     units=1 rows=  360  max|abs|=6.98e-10  max rel=7.90e-16
+  PASS  C10     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows= 1080  max|abs|=0  max rel=0
+  PASS  C12     units=3 rows= 1080  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - active rows scale net volumes, revenues, LOE, tax, operating profit and base D&C by (1 - reversion); slotPromoteOcf, Dale carry capex and acquisition are not scaled
+   - schedule fields merge onto every slot sharing the payout-group name (Python behavior preserved; validation deferred)
+   - C08 (never reaches payout) reconciles against the pandas 2.2.3 fixture: all flags false, null dates, no scaling. The engine has no exception path here
+
+=== promote (L07/L08) full-life vs C07-FL (P2) reconciliation ===
+units compared: 4   passed: 4   failed: 0
+  PASS  C07-FL  units=4 rows= 1528  max|abs|=8.38e-9  max rel=1.46e-15
+  assumptions / behavior notes:
+   - compared on the engine's calculation horizon; fixture months beyond it are all-zero flows (asserted in the calendar test)
+
+=== promote (L08) diagnostic C09a/C09b (expected divergence) reconciliation ===
+units compared: 4   passed: 2   failed: 2
+  FAIL  C09a    units=2 rows=  363  max|abs|=1.13e+7  max rel=5.00e-1
+  FAIL  C09b    units=2 rows=  360  max|abs|=1.13e+7  max rel=7.50e-1
+  --- C09a/L08_slot_1: 47 mismatches 
+  --- C09b/L08_slot_1: 48 mismatches 
+  assumptions / behavior notes:
+   - flowbackDelay = 0 row duplication in Python; see calendar report
+
+=== rollup (L09) parity, calendarMonths=360 reconciliation ===
+units compared: 11   passed: 11   failed: 0
+  PASS  C01     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C02     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C03     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C04     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C05     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C06     units=1 rows=  360  max|abs|=3.73e-9  max rel=9.16e-16
+  PASS  C07     units=1 rows=  360  max|abs|=8.38e-9  max rel=1.46e-15
+  PASS  C08     units=1 rows=  360  max|abs|=6.98e-10  max rel=7.90e-16
+  PASS  C10     units=1 rows=  360  max|abs|=0  max rel=0
+  PASS  C11     units=1 rows=  360  max|abs|=5.82e-11  max rel=2.22e-16
+  PASS  C12     units=1 rows=  360  max|abs|=5.82e-11  max rel=2.22e-16
+  assumptions / behavior notes:
+   - portfolio promote summary present only where the schedule has a row (Python left-merge NaN elsewhere)
+
+=== returns (L10) parity reconciliation ===
+units compared: 11   passed: 11   failed: 0
+  PASS  C01     units=1 rows=    1  max|abs|=1.78e-15  max rel=1.18e-15
+  PASS  C02     units=1 rows=    1  max|abs|=2.07e-13  max rel=1.36e-12
+  PASS  C03     units=1 rows=    1  max|abs|=2.59e-11  max rel=3.00e-10
+  PASS  C04     units=1 rows=    1  max|abs|=1.97e-11  max rel=5.09e-11
+  PASS  C05     units=1 rows=    1  max|abs|=2.05e-10  max rel=2.89e-9
+  PASS  C06     units=1 rows=    1  max|abs|=2.32e-11  max rel=4.59e-10
+  PASS  C07     units=1 rows=    1  max|abs|=3.22e-10  max rel=2.37e-9
+  PASS  C08     units=1 rows=    1  max|abs|=2.88e-11  max rel=3.93e-10
+  PASS  C10     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C11     units=1 rows=    1  max|abs|=1.95e-10  max rel=1.98e-9
+  PASS  C12     units=1 rows=    1  max|abs|=6.71e-10  max rel=1.66e-9
+  assumptions / behavior notes:
+   - XIRR: Actual/365F on first-of-month dates, Newton from 0.1 with bracketed fallback; null when no sign change (C10)
+   - MOIC on the deal-level netted monthly series; 0.0 (not null) when nothing is returned (C10)
+   - payback: legacy value compared with the 2040-12 display cutoff applied; full-life value compared to the harness dynamic expectation
+   - C01: IRR ts=0.13069645027882545 py=0.13069645027882543  MOIC ts=1.5074152578135418 py=1.5074152578135436
+   - C02: IRR ts=0.15190738913005383 py=0.151907389129847  MOIC ts=1.5941412467593383 py=1.594141246759337
+   - C03: IRR ts=0.08639379348505695 py=0.0863937934591299  MOIC ts=1.3968301401227703 py=1.3968301401227692
+   - C04: IRR ts=0.38659313691417646 py=0.3865931368945048  MOIC ts=2.262031036799422 py=2.262031036799423
+   - C05: IRR ts=0.19602848102798037 py=0.19602848102798018  MOIC ts=1.7552524837512764 py=1.7552524837512757
+   - C06: IRR ts=0.050442376507858516 py=0.05044237648469113  MOIC ts=1.214445059001783 py=1.2144450590017846
+   - C07: IRR ts=0.20726325003317753 py=0.20726325003317764  MOIC ts=1.8076999822661692 py=1.8076999822661672
+   - C07-FL: IRR ts=0.20727353737435905 py=0.20727353737435902  MOIC ts=1.813028851305002 py=1.8130288513049997
+   - C08: IRR ts=-0.07319175493126984 py=-0.07319175496006271  MOIC ts=0.7027121396271263 py=0.7027121396271268
+   - C09a: IRR ts=0.15705726218259872 py=-0.035666757092088525  MOIC ts=1.5721596890326206 py=0.8153931862689131
+   - C09b: IRR ts=0.1544359722176837 py=-0.06120674469510832  MOIC ts=1.5356076487524688 py=0.6787570428737488
+   - C10: IRR ts=null py=null  MOIC ts=0 py=0
+   - C11: IRR ts=0.3564518775626372 py=0.35645187755176  MOIC ts=2.092208192458802 py=2.0922081924588056
+   - C12: IRR ts=0.19357353775865294 py=0.19357353775865302  MOIC ts=1.7064523063584418 py=1.7064523063584425
+
+=== rollup/returns full-life vs C07-FL (P2) reconciliation ===
+units compared: 2   passed: 2   failed: 0
+  PASS  C07-FL  units=2 rows=  383  max|abs|=8.38e-9  max rel=2.50e-9
+  assumptions / behavior notes:
+   - deal frame compared through the engine's economic calendar end (last nonzero month); IRR/MOIC vs the monkeypatched Python reference
+
+=== rollup/returns diagnostic C09a/C09b (expected divergence) reconciliation ===
+units compared: 4   passed: 0   failed: 4
+  FAIL  C09a    units=2 rows=  364  max|abs|=1.41e+6  max rel=5.40e+0
+  FAIL  C09b    units=2 rows=  361  max|abs|=1.92e+6  max rel=3.52e+0
+  --- C09a/L09_deal_frame: 20 mismatches 
+  --- C09a/L10_returns: 8 mismatches 
+  --- C09b/L09_deal_frame: 21 mismatches 
+  --- C09b/L10_returns: 8 mismatches 
+  assumptions / behavior notes:
+   - Python duplicates the spud month when flowbackDelay = 0 (capex/production 2x; acquisition 2x in C09b)
+
+=== sensitivities: weighted bases and axes (L12.bases) + base-case isolation reconciliation ===
+units compared: 6   passed: 6   failed: 0
+  PASS  C11     units=4 rows=    4  max|abs|=0  max rel=0
+  PASS  C12     units=2 rows=    2  max|abs|=0  max rel=0
+  assumptions / behavior notes:
+   - weighted spud month uses round-half-even (Python round()); axis rounding to 10 (or 2) decimals as in app.py
+   - base_case_isolation: base inputs are byte-identical after all sensitivity runs and the base-case IRR/MOIC re-runs unchanged
+
+=== sensitivities: two-way grids (L12.grids) reconciliation ===
+units compared: 30   passed: 30   failed: 0
+  PASS  C11     units=26 rows= 1030  max|abs|=6.42e-10  max rel=9.81e-10
+  PASS  C12     units=4 rows=  146  max|abs|=2.32e-10  max rel=8.17e-10
+  assumptions / behavior notes:
+   - C11/dc_main: 9x9 runs in 1.1s
+   - C11/oil_main: 9x9 runs in 0.8s
+   - C11/ngl_main: 9x9 runs in 0.7s
+   - C11/gas_main: 9x9 runs in 0.7s
+   - C11/gas_dc: 9x9 runs in 0.6s
+   - C11/oil_gas: 9x9 runs in 0.7s
+   - C11/cross_main: 9x9 runs in 0.6s
+   - C11/spud_tc: 9x9 runs in 0.5s
+   - C11/carry_dc_custom: 7x9 runs in 0.7s
+   - C11/bid_dc_custom: 7x9 runs in 0.6s
+   - C11/dc_main__tc_risk_as_main: 9x9 runs in 0.7s
+   - C11/cross_main__tc_risk_as_main: 9x9 runs in 0.7s
+   - C11/dc_main__dc_pct_steps: 9x9 runs in 0.7s
+   - C12/dc_main: 9x9 runs in 0.7s
+   - C12/carry_dc_custom: 7x9 runs in 0.6s
+
+=== sensitivities: scenario matrix (L12.scenario_matrix) reconciliation ===
+units compared: 1   passed: 1   failed: 0
+  PASS  C11     units=1 rows=  189  max|abs|=2.49e-10  max rel=5.99e-10
+  assumptions / behavior notes:
+   - computed D&C cases are base +/- $50/ft; engine labels say so (Python legend text said +/- $100)
+   - C11 scenario D&C labels (engine): {"Low":"Low ($693/ft)","Base":"Base ($743/ft)","High":"High ($793/ft)"}  | Python figure legend had: ["Base ($743/ft)","High ($843/ft)","Low ($643/ft)"]
+
+=== reporting (L11) legacy overlap parity reconciliation ===
+units compared: 24   passed: 24   failed: 0
+  PASS  C01     units=2 rows=   13  max|abs|=1.14e-13  max rel=1.21e-14
+  PASS  C02     units=2 rows=   13  max|abs|=2.27e-13  max rel=2.57e-14
+  PASS  C03     units=2 rows=   13  max|abs|=3.41e-13  max rel=5.47e-16
+  PASS  C04     units=2 rows=   13  max|abs|=4.55e-13  max rel=4.07e-16
+  PASS  C05     units=2 rows=   13  max|abs|=3.41e-13  max rel=2.77e-14
+  PASS  C06     units=2 rows=   13  max|abs|=2.27e-13  max rel=1.23e-15
+  PASS  C07     units=2 rows=   13  max|abs|=4.55e-13  max rel=1.22e-15
+  PASS  C07-FL  units=2 rows=   13  max|abs|=4.55e-13  max rel=1.22e-15
+  PASS  C08     units=2 rows=   13  max|abs|=1.14e-13  max rel=4.39e-16
+  PASS  C10     units=2 rows=    6  max|abs|=0  max rel=0
+  PASS  C11     units=2 rows=   13  max|abs|=4.55e-13  max rel=9.57e-16
+  PASS  C12     units=2 rows=   13  max|abs|=4.55e-13  max rel=1.06e-12
+  assumptions / behavior notes:
+   - engine tables built from the full-life run; compared on the legacy Q1 26..Q4 27 / 2026..2033 columns where Python has data (NaN legacy cells skipped)
+
+=== reporting (L11) dynamic-period suite (intentional new behavior) reconciliation ===
+units compared: 50   passed: 50   failed: 0
+  PASS  C01     units=4 rows=   40  max|abs|=2.27e-13  max rel=1.21e-14
+  PASS  C02     units=4 rows=   40  max|abs|=2.27e-13  max rel=2.57e-14
+  PASS  C03     units=4 rows=   40  max|abs|=3.41e-13  max rel=5.65e-16
+  PASS  C04     units=4 rows=   35  max|abs|=4.55e-13  max rel=5.92e-16
+  PASS  C05     units=4 rows=   40  max|abs|=3.41e-13  max rel=2.77e-14
+  PASS  C06     units=4 rows=   40  max|abs|=2.27e-13  max rel=6.17e-15
+  PASS  C07     units=4 rows=   40  max|abs|=9.09e-13  max rel=1.22e-15
+  PASS  C07-FL  units=4 rows=   43  max|abs|=9.09e-13  max rel=1.22e-15
+  PASS  C08     units=4 rows=   39  max|abs|=1.14e-13  max rel=6.27e-15
+  PASS  C09a    units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C09b    units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C10     units=4 rows=   11  max|abs|=0  max rel=0
+  PASS  C11     units=4 rows=   40  max|abs|=9.09e-13  max rel=4.20e-15
+  PASS  C12     units=4 rows=   40  max|abs|=4.55e-13  max rel=1.06e-12
+  assumptions / behavior notes:
+   - annual harness expectation derived from the legacy 360-month frame: its final (truncated) year is excluded; the engine's annual table runs through the full economic life
+   - 8 quarters from the quarter containing calendarStart; annual through economic life; compared to the harness-derived expectation and structural rules
+   - chart window is a pure filter; payback/IRR are from the full-life series
+   - C01 dynamic columns: quarters Q4 26 Q1 27 Q2 27 Q3 27 Q4 27 Q1 28 Q2 28 Q3 28; years 2026..2057 (32)
+
+=== reporting (L11) EUR / ft reconciliation ===
+units compared: 23   passed: 23   failed: 0
+  PASS  C01     units=1 rows=    1  max|abs|=8.53e-14  max rel=1.23e-15
+  PASS  C02     units=1 rows=    1  max|abs|=2.49e-14  max rel=1.23e-15
+  PASS  C03     units=1 rows=    1  max|abs|=4.55e-13  max rel=6.48e-16
+  PASS  C04     units=1 rows=    1  max|abs|=4.55e-13  max rel=5.59e-16
+  PASS  C05     units=2 rows=    2  max|abs|=8.53e-14  max rel=1.23e-15
+  PASS  C06     units=1 rows=    1  max|abs|=8.53e-14  max rel=1.23e-15
+  PASS  C07     units=3 rows=    3  max|abs|=6.82e-13  max rel=1.23e-15
+  PASS  C07-FL  units=3 rows=    3  max|abs|=6.82e-13  max rel=1.23e-15
+  PASS  C08     units=1 rows=    1  max|abs|=7.11e-14  max rel=1.15e-15
+  PASS  C09a    units=1 rows=    1  max|abs|=8.53e-14  max rel=1.23e-15
+  PASS  C09b    units=1 rows=    1  max|abs|=8.53e-14  max rel=1.23e-15
+  PASS  C10     units=1 rows=    1  max|abs|=0  max rel=0
+  PASS  C11     units=3 rows=    3  max|abs|=2.27e-13  max rel=8.70e-16
+  PASS  C12     units=3 rows=    3  max|abs|=2.27e-13  max rel=8.70e-16
+  assumptions / behavior notes:
+   - oil and residue-gas EUR vs Python; raw-gas EUR vs the harness-derived value; recovered NGL = theoretical x sum(content x recovery)
+
+=== reporting diagnostic C09a/C09b (expected divergence) reconciliation ===
+units compared: 10   passed: 2   failed: 8
+  FAIL  C09a    units=5 rows=   53  max|abs|=1.41e+3  max rel=2.60e+0
+  FAIL  C09b    units=5 rows=   52  max|abs|=2.01e+3  max rel=1.73e+0
+  --- C09a/quarterly_legacy_overlap: 23 mismatches overlap columns: Q3 26, Q4 26, Q1 27, Q2 27, Q3 27, Q4 27
+  --- C09a/annual_legacy_overlap: 25 mismatches overlap columns: 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033
+  --- C09a/quarterly_dynamic_expected: 25 mismatches overlap columns: Q3 26, Q4 26, Q1 27, Q2 27, Q3 27, Q4 27, Q1 28, Q2 28
+  --- C09a/annual_dynamic_expected_overlap(full years within legacy calendar): 47 mismatches overlap columns: 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036, 2037, 2038, 2039, 2040, 2041, 2042, 2043, 2044, 2045, 2046, 2047, 2048, 2049, 2050, 2051, 2052, 2053, 2054, 2055
+  --- C09b/quarterly_legacy_overlap: 23 mismatches overlap columns: Q4 26, Q1 27, Q2 27, Q3 27, Q4 27
+  --- C09b/annual_legacy_overlap: 26 mismatches overlap columns: 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033
+  --- C09b/quarterly_dynamic_expected: 26 mismatches overlap columns: Q4 26, Q1 27, Q2 27, Q3 27, Q4 27, Q1 28, Q2 28, Q3 28
+  --- C09b/annual_dynamic_expected_overlap(full years within legacy calendar): 48 mismatches overlap columns: 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036, 2037, 2038, 2039, 2040, 2041, 2042, 2043, 2044, 2045, 2046, 2047, 2048, 2049, 2050, 2051, 2052, 2053, 2054, 2055
+  assumptions / behavior notes:
+   - Python duplicated spud month
+
+flowbackDelay = 0, spud == effective (spud 2026-10-01)
+  PASS  calendar months are unique
+  PASS  spud month has exactly one aligned row aggregating two well rows
+  PASS  spud month period is 1 (first production) with D&C present
+  PASS  single-well frame: period 0 and period 1 share the spud month
+  PASS  D&C booked exactly once  (-1406250 vs -1406250)
+  PASS  total D&C equals the flowbackDelay = 1 run
+  PASS  acquisition booked exactly once, on the effective month
+  PASS  total production equals the flowbackDelay = 1 run (no duplicated month)  (302754.93999999965 vs 302754.93999999965)
+  PASS  first production month is the spud month
+  PASS  deal rollup spud month = operating profit + D&C + acquisition (once each)
+  PASS  deal rollup has one row per month
+  PASS  IRR is finite and higher than the 1-month-delay run (earlier production, same capital)  (0.1544359722176837 vs 0.14751107283461878)
+
+flowbackDelay = 0, spud before effective (spud 2026-07-01)
+  PASS  calendar months are unique
+  PASS  spud month has exactly one aligned row aggregating two well rows
+  PASS  spud month period is 1 (first production) with D&C present
+  PASS  single-well frame: period 0 and period 1 share the spud month
+  PASS  D&C booked exactly once  (-1406250 vs -1406250)
+  PASS  total D&C equals the flowbackDelay = 1 run
+  PASS  acquisition booked exactly once, on the effective month
+  PASS  total production equals the flowbackDelay = 1 run (no duplicated month)  (302754.93999999965 vs 302754.93999999965)
+  PASS  first production month is the spud month
+  PASS  deal rollup spud month = operating profit + D&C + acquisition (once each)
+  PASS  deal rollup has one row per month
+  PASS  IRR is finite and higher than the 1-month-delay run (earlier production, same capital)  (0.15705726218259872 vs 0.1498265521535152)
+
+flowbackDelay = 0 regression: all checks passed
+
+NGL profiles regression
+  PASS  unassigned slots ignore extra profiles (IRR identical)  (0.3564521619274836 vs 0.3564521619274836)
+  PASS  slot on a profile equals deal-default run with the same components  (0.5119571162005045 vs 0.5119571162005045)
+  PASS  profile changes the slot's shrink and % of WTI
+  PASS  mixed deal: slots 1 and 3 unchanged, slot 2 changed
+  PASS  deal-level ethane recovery switch applies to a profiled slot
+  PASS  unknown profile id throws
+
+NGL profiles: all checks passed
+
+UI boundary: 29 files scanned, 0 violations
+
+UI integration (C11 golden fixture)
+  PASS  displayed IRR equals engine result  (35.6% vs 35.6%)
+  PASS  displayed IRR matches Python fixture at display precision  (35.6% vs python 35.6%)
+  PASS  displayed MOIC equals engine result (full life)  (2.10x vs 2.10x)
+  PASS  displayed MOIC within 0.01x of the Python legacy-calendar fixture  (2.10x vs python 2.09x (360-month calendar))
+  PASS  top bar IRR mirrors the tile
+  PASS  payback tile rendered  (2.0 yrs)
+  PASS  quarterly table has 8 dynamic columns starting Q4 26  ($ in thousands|Q4 26|Q1 27|Q2 27|Q3 27|Q4 27|Q1 28|Q2 28|Q3 28)
+  PASS  Q4 27 total revenue cell equals engine and Python  ($909.9 vs python $909.9)
+  PASS  annual table runs through economic life  (2026..2057)
+  PASS  EUR table shows raw vs residue gas and theoretical vs recovered NGL labels
+  PASS  standalone slot 1 IRR equals fixture at display precision  (9.9%)
+  PASS  heatmap base cell equals engine grid  (35.6% vs 35.6%)
+  PASS  heatmap base cell within 0.1% of Python fixture (legacy calendar)  (35.6% vs python 35.65%)
+  PASS  inputs unchanged by run and sensitivity (immutability)
+  PASS  Load validation case C11 button reproduces the fixture IRR and MOIC  (35.6% / 2.10x)
+
+UI integration: all checks passed
+
+UI downloads / running / stale guard
+  PASS  filename stem from deal name  (Towe_HMN_North)
+  PASS  filename stem default
+  PASS  sensitivity title stem keeps D&C ampersand  (D&C_Costs_ft_vs_Acre_Bid)
+  PASS  quarterly CSV header has metric + 8 quarter columns  (Metric,Q4 26,Q1 27,Q2 27,Q3 27,Q4 27,Q1 28,Q2 28,Q3 28)
+  PASS  quarterly CSV total revenue row carries raw engine values
+  PASS  sensitivity CSV has IRR and MOIC blocks with axis labels
+  PASS  grid from an older base run is dropped
+  PASS  grid from the current base run is stored
+  PASS  Run button disabled while running
+  PASS  Run button re-enabled after run
+  PASS  without the downloads runtime: no Download button, Copy CSV present
+  PASS  download request uses the deal-named file  (Towe_HMN_North_Quarterly.csv)
+  PASS  downloaded quarterly CSV equals the CSV builder output
+  PASS  annual, monthly download buttons present
+  PASS  sensitivity download filename includes deal and table name  (Towe_HMN_North_D&C_Costs_ft_vs_Acre_Bid_Sensitivity.csv)
+
+UI downloads: all checks passed
+
+Theme tokens
+  PASS  light token block present  (118 tokens)
+  PASS  system dark block guarded against a viewer-forced light theme
+  PASS  viewer data-theme=dark block present  (75 tokens)
+  PASS  dark blocks cover the same tokens  (75 vs 75)
+  PASS  every themeable light token is redefined for dark
+  PASS  html and body carry an explicit background and color
+  PASS  inputs set explicit background and text color
+  PASS  svg text fills are explicit tokens
+  PASS  no hardcoded colors in UI components
+  PASS  built page declares light dark color-scheme
+  PASS  built page does not force a single color-scheme
+
+Theme: all checks passed
+
+UI NGL profiles
+  PASS  default profile table rendered
+  PASS  content total shows 100.0%
+  PASS  new profile card appears, copied from default
+  PASS  edited content total still 100.0%  (100.0%)
+  PASS  slot 2 assigned to the new profile; slots 1 and 3 remain Default
+  PASS  displayed IRR equals engine run with slot 2 on the 70% ethane profile  (33.1% vs 33.1%)
+  PASS  and differs from the all-default base case  (33.106% vs base 35.645%)
+
+UI NGL profiles: all checks passed
+
+UI footnotes
+  PASS  markers appear beside section headings  (1)
+  PASS  marker numbers run 1..n in reading order  (1)
+  PASS  a note list renders with one item per marker  (1 items / 1 marks)
+  PASS  each marker's href targets its list item id
+  PASS  explanations no longer print under the heading
+  PASS  opening Misc adds its notes to the list  (1 -> 4)
+  PASS  second screen renumbers from 1  (1,2,3)
+
+UI footnotes: all checks passed
+
+UI sensitivities: generate all
+  PASS  one Generate all control is present
+  PASS  no per-table primary Generate buttons remain
+  PASS  progress line shows nothing current yet  (0 of 11 current)
+  PASS  every table rendered from one click  (10 of 10)
+  PASS  progress reports all tables current  (10 of 11 current)
+  PASS  first table's base cell equals the engine grid  (35.6% vs 35.6%)
+  PASS  heatmap shows a legend and a base-case marker
+  PASS  per-table control now reads Refresh
+  PASS  export control appears once a table is current
+
+UI generate all: all checks passed
+
+All modules reconciled.

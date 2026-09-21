@@ -1,0 +1,29 @@
+{
+  "name": "ts-engine",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "tsx tests/run_all.ts",
+    "build": "node build.mjs",
+    "typecheck": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "esbuild": "^0.24.2",
+    "global-jsdom": "^25.0.0",
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}
