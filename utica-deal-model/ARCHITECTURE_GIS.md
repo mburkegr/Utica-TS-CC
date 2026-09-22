@@ -162,18 +162,28 @@ introduces it renders properly instead of dropping to the fallback. An
 unrecognised code shows verbatim rather than being hidden.
 
 `OPERATOR_ALIASES` / `operatorOf` canonicalize the operator name, which ODNR
-files free-form: `Gulfport Energy Transferred to Gulfport Appalachia`,
-`Gulfport Appalachia` and `Gulfport Energy` all display as Gulfport
-Appalachia, and `INR Onio` as INR Ohio. Keys are the filed value,
-whitespace-collapsed and lower-cased. The canonical name is what display,
-legends and grouping use; `OPERATOR` itself is never rewritten and the
-drawer's full attribute list shows it as filed, so the 20 filed values reduce
-to 17 for display while the file still round-trips to the source.
+files free-form. Keys are the filed value, whitespace-collapsed and
+lower-cased, so matching tolerates case and spacing:
 
-Aliases are added only on explicit approval. Two filed values look like they
-could be variants of others — `OG Resources` (1 unit, alongside 62
-`EOG Resources`) and `Tiburon` (1 unit, alongside 2 `Tiburon Oil and Gas
-Ohio`) — and are deliberately left unaliased rather than inferred.
+| Filed | Canonical |
+|---|---|
+| `Gulfport Energy Transferred to Gulfport Appalachia`, `Gulfport Appalachia`, `Gulfport Energy` | Gulfport Appalachia |
+| `INR Onio`, `INR Ohio` | INR Ohio |
+| `EOG Ohio`, `EOG Resources`, `Eclipse`, `OG Resources` | EOG Resources |
+| `Rice Drilling D` | EQT |
+
+EOG Ohio and EOG Resources are one operator; the Eclipse unit is now EOG's and
+`OG Resources` is a dropped leading E. EQT acquired Rice Energy in 2017.
+
+The canonical name is what display, legends and grouping use; `OPERATOR`
+itself is never rewritten and the drawer's full attribute list shows it as
+filed, so the 20 filed values reduce to 14 for display while the file still
+round-trips to the source.
+
+Aliases are added only on explicit approval, never inferred from a name that
+merely resembles another. `Tiburon` (1 unit) is deliberately absent: it is an
+active operator in its own right, not a short spelling of `Tiburon Oil and Gas
+Ohio` (2 units).
 
 Provenance: ODNR Division of Oil and Gas Resources Management `Unitizations`
 shapefile, NAD83 / StatePlane Ohio South FIPS 3402 (US survey feet),

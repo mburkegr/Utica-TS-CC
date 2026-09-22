@@ -70,9 +70,12 @@ check("the tracked file stores raw ODNR status codes, not expanded names", statu
 // Operator canonicalization is a display-time map: the filed values stay in the tracked file.
 const rawOperators = [...new Set(odnr.data.collection.features.map((f) => String(f.properties!.OPERATOR)))];
 const canonical = [...new Set(rawOperators.map(operatorOf))];
-check("the tracked file keeps every operator name as filed", ["Gulfport Energy Transferred to Gulfport Appalachia", "Gulfport Appalachia", "Gulfport Energy", "INR Onio", "INR Ohio"].every((v) => rawOperators.includes(v)), `${rawOperators.length} filed values`);
-check("canonicalization merges the Gulfport and INR variants and nothing else", rawOperators.length === 20 && canonical.length === 17, `${rawOperators.length} filed → ${canonical.length} canonical`);
+check("the tracked file keeps every operator name as filed", ["Gulfport Energy Transferred to Gulfport Appalachia", "Gulfport Appalachia", "Gulfport Energy", "INR Onio", "INR Ohio", "EOG Ohio", "EOG Resources", "Eclipse", "OG Resources", "Rice Drilling D", "Tiburon", "Tiburon Oil and Gas Ohio"].every((v) => rawOperators.includes(v)), `${rawOperators.length} filed values`);
+check("canonicalization merges the Gulfport, INR and EOG variants and nothing else", rawOperators.length === 20 && canonical.length === 14, `${rawOperators.length} filed → ${canonical.length} canonical`);
 check("no filed operator is dropped or blanked by canonicalization", canonical.every((c) => c.length > 0) && rawOperators.every((r) => canonical.includes(operatorOf(r))));
+const unitsPer = (name: string) => odnr.data.collection.features.filter((f) => operatorOf(f.properties!.OPERATOR) === name).length;
+check("EOG Resources gathers all four filed spellings", unitsPer("EOG Resources") === 233, `${unitsPer("EOG Resources")} units`);
+check("EQT holds the Rice Drilling D units", unitsPer("EQT") === 4, `${unitsPer("EQT")} units`);
 const M_PER_DEG_LAT = 110574, M_PER_DEG_LON_AT = (lat: number) => 111320 * Math.cos((lat * Math.PI) / 180);
 const ringM2 = (ring: number[][], lat0: number) => {
   const kx = M_PER_DEG_LON_AT(lat0);

@@ -37,8 +37,11 @@ check("NLE is registered with a style although the current extract has none", Ob
 // Operator: an alias map, not an edit to the source. Aliases are approved explicitly, never inferred.
 check("approved operator aliases canonicalize", operatorOf("Gulfport Energy Transferred to Gulfport Appalachia") === "Gulfport Appalachia" && operatorOf("Gulfport Appalachia") === "Gulfport Appalachia" && operatorOf("Gulfport Energy") === "Gulfport Appalachia" && operatorOf("INR Onio") === "INR Ohio" && operatorOf("INR Ohio") === "INR Ohio");
 check("operator matching ignores case and collapses whitespace", operatorOf("  gulfport   energy  ") === "Gulfport Appalachia" && operatorOf("inr onio") === "INR Ohio");
-check("an unaliased operator passes through as filed", operatorOf("Ascent") === "Ascent" && operatorOf("EOG Resources") === "EOG Resources" && operatorOf("OG Resources") === "OG Resources" && operatorOf("Tiburon") === "Tiburon");
-check("the alias map holds only the five approved entries", Object.keys(OPERATOR_ALIASES).length === 5, Object.keys(OPERATOR_ALIASES).join(" | "));
+check("EOG Ohio, EOG Resources, Eclipse and OG Resources are one operator", ["EOG Ohio", "EOG Resources", "Eclipse", "OG Resources"].every((v) => operatorOf(v) === "EOG Resources"));
+check("Rice Drilling D files under EQT", operatorOf("Rice Drilling D") === "EQT");
+check("an unaliased operator passes through as filed", operatorOf("Ascent") === "Ascent" && operatorOf("Hilcorp Energy") === "Hilcorp Energy");
+check("Tiburon is an operator in its own right, not folded into Tiburon Oil and Gas Ohio", operatorOf("Tiburon") === "Tiburon" && operatorOf("Tiburon Oil and Gas Ohio") === "Tiburon Oil and Gas Ohio");
+check("the alias map holds only the approved entries", Object.keys(OPERATOR_ALIASES).length === 10, Object.keys(OPERATOR_ALIASES).join(" | "));
 check("the popup derives the canonical operator and leaves OPERATOR untouched", units.popup.fields.find((f) => f.key === "OPERATOR")!.derive!({ OPERATOR: "Gulfport Energy" }) === "Gulfport Appalachia");
 
 // Style tokens defined in ui/gis/gis.css for light, system dark and forced dark.

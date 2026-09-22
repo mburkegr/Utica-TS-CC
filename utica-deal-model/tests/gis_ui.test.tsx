@@ -91,7 +91,8 @@ async function main() {
   act(() => adapter.click([-81.1761460636001, 40.43147027485477]));
   await waitFor(() => { if (adapter.highlight?.layerId !== "opt.odnr_units") throw new Error("unit not primary"); });
   check("clicking inside a unit identifies the unit first, with the reference layers as tabs", screen.getByTestId("selection-title").textContent === "Bowerston North" && screen.getByTestId("selection-tab-ref.counties") !== null);
-  check("unit popup carries operator, order, status, formation and acreage", ["Operator", "Order no.", "Status", "Formation", "Acres"].every((l) => new RegExp(`${l.replace(".", "\\.")}</dt>`).test(adapter.popup ?? "")) && /Operator<\/dt><dd>EOG Ohio/.test(adapter.popup ?? "") && /Acres<\/dt><dd>866/.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150));
+  check("unit popup carries operator, order, status, formation and acreage", ["Operator", "Order no.", "Status", "Formation", "Acres"].every((l) => new RegExp(`${l.replace(".", "\\.")}</dt>`).test(adapter.popup ?? "")) && /Operator<\/dt><dd>EOG Resources</.test(adapter.popup ?? "") && /Acres<\/dt><dd>866/.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150));
+  check("Bowerston North is filed as EOG Ohio and displays as EOG Resources", (store.get("opt.odnr_units") as { state: "ready"; data: LayerData }).data.byId.get("BOWERSTON_NORTH")!.properties!.OPERATOR === "EOG Ohio");
   check("unit popup shows the expanded status, not the raw code", /Status<\/dt><dd>Effective</.test(adapter.popup ?? ""), adapter.popup?.match(/Status<\/dt><dd>[^<]*/)?.[0]);
 
   // A Gulfport unit: the popup and drawer show the canonical operator, the drawer's raw attribute list keeps the filed value.
