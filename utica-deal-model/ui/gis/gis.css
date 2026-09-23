@@ -80,6 +80,19 @@
 .gis-overlay{position:absolute;left:0;right:0;top:0;display:flex;justify-content:center;padding:14px;pointer-events:none;z-index:1000}
 .gis-overlay .banner{pointer-events:auto;max-width:60ch;box-shadow:0 10px 30px -14px rgba(0,0,0,.5)}
 
+/* Unit search: rail-width combobox over the ODNR units layer. The rail is dark
+   in both themes, so this uses the rail tokens rather than the page tokens. */
+.gis-search{display:flex;flex-direction:column;gap:4px;padding:8px 10px 2px}
+.gis-search-input{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:7px;border:1px solid var(--rail-active);background:var(--rail-active);color:var(--rail-text);font-family:var(--font-sans);font-size:12.5px}
+.gis-search-input::placeholder{color:var(--rail-muted)}
+.gis-search-input:focus{outline:none;border-color:var(--sky-500)}
+.gis-search-note{color:var(--rail-muted);font-size:11.5px;padding:0 2px}
+.gis-search-results{list-style:none;margin:2px 0 0;padding:0;max-height:240px;overflow:auto;border-radius:7px;background:var(--rail-2)}
+.gis-search-result{display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;border:none;background:none;cursor:pointer;padding:6px 9px;color:var(--rail-text);font-family:var(--font-sans)}
+.gis-search-result.active{background:var(--rail-active)}
+.gis-search-name{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gis-search-meta{font-size:11px;color:var(--rail-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* Rail layer panel */
 .gis-rail{display:flex;flex-direction:column;gap:2px;padding:4px 10px 8px;overflow:auto;min-height:0}
 .gis-rail h4{margin:10px 8px 4px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rail-muted)}
