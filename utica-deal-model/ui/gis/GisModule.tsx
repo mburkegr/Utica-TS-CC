@@ -2,7 +2,7 @@ import React from "react";
 import { Logo } from "../components/Logo";
 import { Banner } from "../components/fields";
 import {
-  LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, labelAnchor, unionBbox, padBbox, layersInDrawOrder,
+  LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, labelAnchor, unionBbox, padBbox, layersInDrawOrder, filterUnitsByOperator,
   type LayerDefinition, type LayerData, type LayerStatus, type MapAdapterFactory, type MapView, type ManifestLike, type FetchLike, type Bbox, type Position,
 } from "../../gis/index";
 import manifestJson from "../../gis-data/manifest.json";
@@ -11,6 +11,7 @@ import { loadGisState, saveGisState, GIS_SAVE_DEBOUNCE_MS } from "./state/gisPer
 import { LayerPanel } from "./LayerPanel";
 import { FeaturePanel, type ResolvedHit } from "./FeaturePanel";
 import { UnitSearch } from "./UnitSearch";
+import { UnitFilter } from "./UnitFilter";
 import { UticaMap } from "./UticaMap";
 
 /** The searchable layer. Search is scoped to units; see gis/search.ts. */
@@ -54,7 +55,29 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
   React.useEffect(() => { if (!restorePrefs) return; const t = setTimeout(() => saveGisState(state), GIS_SAVE_DEBOUNCE_MS); return () => clearTimeout(t); }, [state.visible, state.labels, state.view, restorePrefs]);
 
   const statusOf = (id: string): LayerStatus => store.get(id);
-  const readyLayers = (): { def: LayerDefinition; data: LayerData }[] => layersInDrawOrder(defs).flatMap((def) => { const data = store.data(def.id); return data ? [{ def, data }] : []; });
+
+  /**
+   * The data a layer renders from: the units layer narrowed to the selected
+   * operator, every other layer as loaded. Everything downstream — the map,
+   * the hit test, the selection, the feature count, zoom to layer — reads
+   * through here, so none of them can disagree about what is filtered out.
+   * Memoized on the operator and the loaded units, so panning does not
+   * re-filter 789 polygons.
+   */
+  const unitsRaw = store.data(UNITS_LAYER);
+  const unitsDef = React.useMemo(() => defs.find((d) => d.id === UNITS_LAYER) ?? null, [defs]);
+  const unitsView = React.useMemo(
+    () => (unitsDef && unitsRaw ? filterUnitsByOperator(unitsDef, unitsRaw, state.unitOperator) : unitsRaw),
+    [unitsDef, unitsRaw, state.unitOperator],
+  );
+  // Read through a ref, not the closure: `events` is memoized on [adapter, store],
+  // so a click handler captured on the first render would otherwise keep filtering
+  // against the units view from before the layer loaded.
+  const unitsViewRef = React.useRef<LayerData | null>(unitsView);
+  unitsViewRef.current = unitsView;
+  const dataFor = (id: string): LayerData | null => (id === UNITS_LAYER ? unitsViewRef.current : store.data(id));
+
+  const readyLayers = (): { def: LayerDefinition; data: LayerData }[] => layersInDrawOrder(defs).flatMap((def) => { const data = dataFor(def.id); return data ? [{ def, data }] : []; });
   const visibleReady = () => readyLayers().filter(({ def }) => stateRef.current.visible[def.id]);
 
   // Reconcile the map with state after every render: layers, labels, highlight. Adapter calls are idempotent.
@@ -62,13 +85,13 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
   React.useEffect(() => {
     if (!ready) return;
     for (const def of layersInDrawOrder(defs)) {
-      const data = store.data(def.id); const on = Boolean(state.visible[def.id]) && data !== null;
+      const data = dataFor(def.id); const on = Boolean(state.visible[def.id]) && data !== null;
       adapter.setLayer(def, on ? data : null);
       if (def.label) adapter.setLabels(def, on && Boolean(state.labels[def.id]) ? data : null);
     }
     const sel = state.selection; const primary = sel?.hits[sel.primary];
     const pdef = primary ? defs.find((d) => d.id === primary.layerId) ?? null : null;
-    adapter.setHighlight(pdef, pdef ? store.data(pdef.id) : null, primary ?? null);
+    adapter.setHighlight(pdef, pdef ? dataFor(pdef.id) : null, primary ?? null);
     if (!sel) adapter.closePopup();
   });
 
@@ -94,6 +117,9 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
     },
   }), [adapter, store]);
 
+  /** Switch the units layer on and fetch it; idempotent, so callers need not check. */
+  const needUnits = () => { dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true }); void store.load(UNITS_LAYER).catch(() => undefined); };
+
   /**
    * Search result picked: switch the units layer on, select the feature exactly
    * as a map click would (highlight + popup + detail drawer), and fly to it.
@@ -112,11 +138,11 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
     if (b) adapter.fitBbox(padBbox(b, 0.6), 15);
   };
 
-  const zoomToLayer = (id: string) => { const d = store.data(id); if (d) adapter.fitBbox(padBbox(d.bbox, 0.02), 12); };
+  const zoomToLayer = (id: string) => { const d = dataFor(id); if (d) adapter.fitBbox(padBbox(d.bbox, 0.02), 12); };
   const zoomToExtent = () => { const b = unionAll(readyLayers().filter((l) => l.def.tier === "reference").map((l) => l.data.bbox)); if (b) adapter.fitBbox(padBbox(b, 0.02), 12); };
   const zoomToFeature = (h: ResolvedHit) => { const b = bboxOfGeometry(h.feature.geometry); if (b) adapter.fitBbox(padBbox(b, 0.15), 24); };
 
-  const hits: ResolvedHit[] = (state.selection?.hits ?? []).flatMap((h) => { const def = defs.find((d) => d.id === h.layerId); const f = def ? store.data(def.id)?.byId.get(h.featureId) : undefined; return def && f ? [{ def, featureId: h.featureId, feature: f }] : []; });
+  const hits: ResolvedHit[] = (state.selection?.hits ?? []).flatMap((h) => { const def = defs.find((d) => d.id === h.layerId); const f = def ? dataFor(def.id)?.byId.get(h.featureId) : undefined; return def && f ? [{ def, featureId: h.featureId, feature: f }] : []; });
   const totalFeatures = readyLayers().reduce((n, l) => n + l.data.featureCount, 0);
   const loading = defs.some((d) => store.get(d.id).state === "loading");
   const errors = defs.filter((d) => store.get(d.id).state === "error");
@@ -129,8 +155,15 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
         {moduleNav}
         <UnitSearch
           status={statusOf(UNITS_LAYER)}
-          onNeedLayer={() => { dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true }); void store.load(UNITS_LAYER).catch(() => undefined); }}
+          operator={state.unitOperator}
+          onNeedLayer={needUnits}
           onPick={pickSearchHit}
+        />
+        <UnitFilter
+          status={statusOf(UNITS_LAYER)}
+          operator={state.unitOperator}
+          onNeedLayer={needUnits}
+          onChange={(operator) => { dispatch({ type: "SET_UNIT_OPERATOR", operator }); if (operator !== null) dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true }); }}
         />
         <LayerPanel defs={defs} statusOf={statusOf} state={state} dispatch={dispatch} onZoom={zoomToLayer} onRetry={(id) => void store.retry(id).catch(() => undefined)} />
         <div className="rail-foot">EPSG:4326 GeoJSON, vector only. Click the map to identify the township, county and phase window at that point.</div>

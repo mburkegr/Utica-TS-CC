@@ -131,6 +131,36 @@ async function main() {
   check("a query matching nothing says so", screen.getByTestId("unit-search-note").textContent === "No matching unit");
   fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "" } });
   fireEvent.click(screen.getByTestId("clear-selection"));
+
+  // Operator filter: narrows what the map draws, what the status line counts,
+  // what a click can hit, and what search can return.
+  const select = screen.getByTestId("unit-filter-select") as HTMLSelectElement;
+  const optionText = [...select.options].map((o) => o.textContent);
+  check("the operator filter lists canonical operators with counts, most units first", optionText[0] === "All operators (789)" && optionText[1] === "Ascent (299)" && optionText[2] === "EOG Resources (233)", optionText.slice(0, 3).join(" | "));
+  check("the filter offers one option per canonical operator", select.options.length === 15, String(select.options.length));
+  const optionValues = [...select.options].map((o) => o.value);
+  check("no filed variant name is offered, only canonical operators", !["EOG Ohio", "Eclipse", "OG Resources", "Rice Drilling D", "Gulfport Energy", "Gulfport Energy Transferred to Gulfport Appalachia", "INR Onio"].some((v) => optionValues.includes(v)), optionValues.filter(Boolean).join(" | "));
+  fireEvent.change(select, { target: { value: "EQT" } });
+  await waitFor(() => { if (adapter.layers.get("opt.odnr_units")?.featureCount !== 4) throw new Error("not filtered"); });
+  check("choosing an operator redraws the map with only its units", adapter.layers.get("opt.odnr_units")?.featureCount === 4);
+  check("the status line counts what is drawn, not what is loaded", /5 layers · 231 features/.test(screen.getByTestId("gis-status").textContent ?? ""), screen.getByTestId("gis-status").textContent ?? "");
+  check("the filter reports how much it is hiding", /4 of 789 units/.test(screen.getByTestId("unit-filter-clear").textContent ?? ""), screen.getByTestId("unit-filter-clear").textContent ?? "");
+  act(() => adapter.click([-81.1761460636001, 40.43147027485477]));
+  await waitFor(() => { if (adapter.popup === null) throw new Error("no popup"); });
+  check("a filtered-out unit can no longer be clicked", adapter.highlight?.layerId !== "opt.odnr_units" && !/Bowerston North/.test(adapter.popup ?? ""), adapter.highlight?.layerId ?? "none");
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "bowerston" } });
+  await waitFor(() => { if (document.querySelector('[data-testid="unit-search-note"]') === null) throw new Error("no note"); });
+  check("search is narrowed to the filtered operator", screen.getByTestId("unit-search-note").textContent === "No matching unit for EQT" && document.querySelector('[data-testid="unit-search-results"]') === null);
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "" } });
+  const fitsBeforeZoom = adapter.fits.length;
+  fireEvent.click(screen.getByTestId("layer-zoom-opt.odnr_units"));
+  const zoomed = adapter.fits[adapter.fits.length - 1];
+  check("zoom to layer frames the filtered operator's acreage, not the whole play", adapter.fits.length === fitsBeforeZoom + 1 && zoomed[0] > -81.0 && zoomed[2] < -80.8, zoomed?.map((v) => v.toFixed(3)).join(","));
+  fireEvent.click(screen.getByTestId("unit-filter-clear"));
+  await waitFor(() => { if (adapter.layers.get("opt.odnr_units")?.featureCount !== 789) throw new Error("not restored"); });
+  check("clearing the filter restores every unit", adapter.layers.get("opt.odnr_units")?.featureCount === 789 && /5 layers · 1,016 features/.test(screen.getByTestId("gis-status").textContent ?? ""));
+  check("the clear affordance goes away once nothing is filtered", document.querySelector('[data-testid="unit-filter-clear"]') === null && select.value === "");
+
   fireEvent.click(screen.getByTestId("layer-toggle-opt.odnr_units"));
   await waitFor(() => { if (adapter.layers.get("opt.odnr_units") != null) throw new Error("units still on"); });
 

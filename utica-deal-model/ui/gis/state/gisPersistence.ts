@@ -5,10 +5,10 @@ import { GIS_SCHEMA_VERSION, initialGisState, type GisState } from "./gisReducer
 export const GIS_STORAGE_KEY = "utica-gis-v1";
 export const GIS_SAVE_DEBOUNCE_MS = 400;
 
-interface Saved { schemaVersion: string; savedAt: string; visible: GisState["visible"]; labels: GisState["labels"]; view: GisState["view"] }
+interface Saved { schemaVersion: string; savedAt: string; visible: GisState["visible"]; labels: GisState["labels"]; view: GisState["view"]; unitOperator: GisState["unitOperator"] }
 
 export function saveGisState(s: GisState): void {
-  try { const d: Saved = { schemaVersion: GIS_SCHEMA_VERSION, savedAt: new Date().toISOString(), visible: s.visible, labels: s.labels, view: s.view }; globalThis.localStorage?.setItem(GIS_STORAGE_KEY, JSON.stringify(d)); } catch { /* ignore */ }
+  try { const d: Saved = { schemaVersion: GIS_SCHEMA_VERSION, savedAt: new Date().toISOString(), visible: s.visible, labels: s.labels, view: s.view, unitOperator: s.unitOperator }; globalThis.localStorage?.setItem(GIS_STORAGE_KEY, JSON.stringify(d)); } catch { /* ignore */ }
 }
 
 /** Restore on top of registry defaults so newly registered layers get their default visibility. */
@@ -21,7 +21,8 @@ export function loadGisState(defs: readonly LayerDefinition[]): GisState {
     for (const k of Object.keys(visible)) if (typeof d.visible?.[k] === "boolean") visible[k] = d.visible[k];
     for (const k of Object.keys(labels)) if (typeof d.labels?.[k] === "boolean") labels[k] = d.labels[k];
     const view = d.view && Array.isArray(d.view.center) && typeof d.view.zoom === "number" ? d.view : null;
-    return { ...base, visible, labels, view };
+    const unitOperator = typeof d.unitOperator === "string" && d.unitOperator ? d.unitOperator : null;
+    return { ...base, visible, labels, view, unitOperator };
   } catch { return base; }
 }
 export function clearGisState(): void { try { globalThis.localStorage?.removeItem(GIS_STORAGE_KEY); } catch { /* ignore */ } }

@@ -37,9 +37,9 @@ Two layers, mirroring the engine/ui split:
 | `gis/map/MapAdapter.ts` | The interface the UI talks to |
 | `gis/map/leafletAdapter.ts`, `leafletLoader.ts`, `style.ts` | Leaflet 1.9.4 implementation, on-demand script load, token → color resolution |
 | `gis/format.ts` | Popup HTML and attribute formatting |
-| `gis/search.ts` | Unit search: index + ranked query over the ODNR layer |
+| `gis/search.ts` | Unit lookup: search index + ranked query, and the operator filter |
 | `gis/index.ts` | Public surface; `ui/` imports only from here (enforced by `tests/ui_boundary.test.ts`) |
-| `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `UnitSearch`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
+| `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `UnitSearch`, `UnitFilter`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
 | `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units), `manifest.json`, `scripts/manifest.mjs` |
 
 Data flow: `LayerStore.loadEager()` on first open → store status changes
@@ -208,7 +208,7 @@ than EPSG:3735, whose false easting differs by ~1.2 m. Conversion notes:
   dropped; `create_dat` is empty for every record. `edit_date` is kept as
   `EDIT_DATE`, the data vintage.
 
-### Unit search
+### Unit search and operator filter
 
 789 units cannot be picked out by eye, so `gis/search.ts` indexes them and
 `ui/gis/UnitSearch.tsx` puts a box at the top of the GIS rail. Search is scoped
@@ -230,6 +230,31 @@ to units on purpose: the reference layers are found by looking at the map.
   map click would (highlight, popup, detail drawer) and fits the map to its
   bounds. Selecting before the layer has rendered is safe: the reconcile effect
   applies the highlight once the data is on the map.
+
+The **operator filter** (`operatorOptions`, `filterUnitsByOperator`,
+`ui/gis/UnitFilter.tsx`) narrows the layer to one operator. Options are the
+canonical operators present in the data with their unit counts, ordered by
+count, so the Gulfport and EOG spellings appear once each and the list leads
+with whoever holds the most acreage.
+
+- `filterUnitsByOperator` returns the layer re-indexed on the subset, so its
+  bbox, `byId` and feature count all describe what is drawn: "zoom to layer"
+  frames that operator's acreage and the status line counts its units. A null
+  operator returns the original data untouched, so the unfiltered case
+  allocates nothing.
+- `GisModule.dataFor()` is the single place that decides what a layer renders
+  from. The map, the hit test, the selection, the feature count and zoom to
+  layer all read through it, so they cannot disagree about what is filtered
+  out — a unit hidden by the filter is also unclickable. It reads the filtered
+  view through a ref, because `events` is memoized and a handler captured on
+  the first render would otherwise hold a stale view.
+- Search is narrowed by the same operator, so a result can never be a unit the
+  map is hiding.
+- Changing the filter clears the selection, rather than leaving the drawer open
+  on a unit that is no longer drawn.
+- The choice persists with the other GIS preferences under
+  `localStorage["utica-gis-v1"]`; a stored operator that no longer exists after
+  a data refresh still shows as selected, reading "(0)".
 
 ## 6. Asset, loading and caching strategy
 
