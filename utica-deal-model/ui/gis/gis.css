@@ -93,6 +93,14 @@
 .gis-search-name{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gis-search-meta{font-size:11px;color:var(--rail-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* Operator filter: narrows the units layer; sits under the search box. */
+.gis-filter{display:flex;flex-direction:column;gap:3px;padding:2px 10px 6px}
+.gis-filter-select{width:100%;box-sizing:border-box;padding:6px 9px;border-radius:7px;border:1px solid var(--rail-active);background:var(--rail-active);color:var(--rail-text);font-family:var(--font-sans);font-size:12.5px}
+.gis-filter-select:focus{outline:none;border-color:var(--sky-500)}
+.gis-filter-select:disabled{opacity:.45}
+.gis-filter-clear{align-self:flex-start;border:none;background:none;padding:1px 2px;cursor:pointer;color:var(--rail-muted);font-family:var(--font-sans);font-size:11px;text-align:left}
+.gis-filter-clear:hover{color:var(--rail-text);text-decoration:underline}
+
 /* Rail layer panel */
 .gis-rail{display:flex;flex-direction:column;gap:2px;padding:4px 10px 8px;overflow:auto;min-height:0}
 .gis-rail h4{margin:10px 8px 4px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rail-muted)}
