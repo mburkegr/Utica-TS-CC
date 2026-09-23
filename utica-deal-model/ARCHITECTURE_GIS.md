@@ -37,8 +37,9 @@ Two layers, mirroring the engine/ui split:
 | `gis/map/MapAdapter.ts` | The interface the UI talks to |
 | `gis/map/leafletAdapter.ts`, `leafletLoader.ts`, `style.ts` | Leaflet 1.9.4 implementation, on-demand script load, token → color resolution |
 | `gis/format.ts` | Popup HTML and attribute formatting |
+| `gis/search.ts` | Unit search: index + ranked query over the ODNR layer |
 | `gis/index.ts` | Public surface; `ui/` imports only from here (enforced by `tests/ui_boundary.test.ts`) |
-| `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
+| `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `UnitSearch`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
 | `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units), `manifest.json`, `scripts/manifest.mjs` |
 
 Data flow: `LayerStore.loadEager()` on first open → store status changes
@@ -206,6 +207,29 @@ than EPSG:3735, whose false easting differs by ~1.2 m. Conversion notes:
 - The ODNR editing fields `create_by` and `edit_by` (internal staff ids) are
   dropped; `create_dat` is empty for every record. `edit_date` is kept as
   `EDIT_DATE`, the data vintage.
+
+### Unit search
+
+789 units cannot be picked out by eye, so `gis/search.ts` indexes them and
+`ui/gis/UnitSearch.tsx` puts a box at the top of the GIS rail. Search is scoped
+to units on purpose: the reference layers are found by looking at the map.
+
+- Matches the three things that identify a unit in conversation: `UNIT_NAME`,
+  the operator, and `ORDER_NO`. Both the canonical operator and the name as
+  ODNR filed it are indexed, so "Gulfport Energy" finds units the UI labels
+  Gulfport Appalachia.
+- Queries are folded to lower case with punctuation as a separator, so
+  `2016-237` and `2016 237` are the same query. Every term has to match, so
+  extra words narrow the result set instead of widening it.
+- Ranking: whole-name match, then name prefix, then name substring, then a
+  match in another field; ties break alphabetically, so a given query always
+  returns the same order. Capped at 20 rows in the UI.
+- The units layer is lazy, so the first query asks for it and the box reports
+  "Loading units…" rather than "No matching unit" for data it has not fetched.
+- Picking a result switches the layer on, then selects the unit exactly as a
+  map click would (highlight, popup, detail drawer) and fits the map to its
+  bounds. Selecting before the layer has rendered is safe: the reconcile effect
+  applies the highlight once the data is on the map.
 
 ## 6. Asset, loading and caching strategy
 

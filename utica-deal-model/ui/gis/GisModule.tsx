@@ -2,7 +2,7 @@ import React from "react";
 import { Logo } from "../components/Logo";
 import { Banner } from "../components/fields";
 import {
-  LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, unionBbox, padBbox, layersInDrawOrder,
+  LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, labelAnchor, unionBbox, padBbox, layersInDrawOrder,
   type LayerDefinition, type LayerData, type LayerStatus, type MapAdapterFactory, type MapView, type ManifestLike, type FetchLike, type Bbox, type Position,
 } from "../../gis/index";
 import manifestJson from "../../gis-data/manifest.json";
@@ -10,7 +10,11 @@ import { gisReducer, initialGisState, type GisState } from "./state/gisReducer";
 import { loadGisState, saveGisState, GIS_SAVE_DEBOUNCE_MS } from "./state/gisPersistence";
 import { LayerPanel } from "./LayerPanel";
 import { FeaturePanel, type ResolvedHit } from "./FeaturePanel";
+import { UnitSearch } from "./UnitSearch";
 import { UticaMap } from "./UticaMap";
+
+/** The searchable layer. Search is scoped to units; see gis/search.ts. */
+const UNITS_LAYER = "opt.odnr_units";
 
 export interface GisModuleProps {
   moduleNav?: React.ReactNode;
@@ -90,6 +94,24 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
     },
   }), [adapter, store]);
 
+  /**
+   * Search result picked: switch the units layer on, select the feature exactly
+   * as a map click would (highlight + popup + detail drawer), and fly to it.
+   * Selecting before the layer has rendered is fine — the reconcile effect
+   * above applies the highlight once the data is on the map.
+   */
+  const pickSearchHit = (hit: { id: string; feature: { geometry: any; properties: Record<string, unknown> | null } }) => {
+    const def = defs.find((d) => d.id === UNITS_LAYER); if (!def) return;
+    if (!stateRef.current.visible[UNITS_LAYER]) dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true });
+    const at = labelAnchor(hit.feature.geometry);
+    const b = bboxOfGeometry(hit.feature.geometry);
+    if (at) {
+      dispatch({ type: "SELECT", at, hits: [{ layerId: UNITS_LAYER, featureId: hit.id }] });
+      adapter.openPopup(at, popupHtml([popupSection(def, hit.feature.properties ?? {})]));
+    }
+    if (b) adapter.fitBbox(padBbox(b, 0.6), 15);
+  };
+
   const zoomToLayer = (id: string) => { const d = store.data(id); if (d) adapter.fitBbox(padBbox(d.bbox, 0.02), 12); };
   const zoomToExtent = () => { const b = unionAll(readyLayers().filter((l) => l.def.tier === "reference").map((l) => l.data.bbox)); if (b) adapter.fitBbox(padBbox(b, 0.02), 12); };
   const zoomToFeature = (h: ResolvedHit) => { const b = bboxOfGeometry(h.feature.geometry); if (b) adapter.fitBbox(padBbox(b, 0.15), 24); };
@@ -105,6 +127,11 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
       <aside className="rail">
         <div className="brand"><Logo size={134} /><div className="brand-text">Utica<small>Map and spatial reference</small></div></div>
         {moduleNav}
+        <UnitSearch
+          status={statusOf(UNITS_LAYER)}
+          onNeedLayer={() => { dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true }); void store.load(UNITS_LAYER).catch(() => undefined); }}
+          onPick={pickSearchHit}
+        />
         <LayerPanel defs={defs} statusOf={statusOf} state={state} dispatch={dispatch} onZoom={zoomToLayer} onRetry={(id) => void store.retry(id).catch(() => undefined)} />
         <div className="rail-foot">EPSG:4326 GeoJSON, vector only. Click the map to identify the township, county and phase window at that point.</div>
       </aside>

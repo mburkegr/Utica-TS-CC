@@ -109,6 +109,31 @@ async function main() {
   await waitFor(() => { if (adapter.layers.get("opt.odnr_units") != null) throw new Error("units still on"); });
   check("toggling ODNR Units off removes the layer but keeps the session cache", store.get("opt.odnr_units").state === "ready");
 
+  // Unit search: typing pulls in the lazy layer, picking a result switches it on,
+  // highlights the unit, opens its details and flies to it.
+  check("the unit search box is in the rail", screen.getByTestId("unit-search-input") !== null);
+  check("no results before a query", document.querySelector('[data-testid="unit-search-results"]') === null);
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "bowerston nor" } });
+  await waitFor(() => { if (document.querySelector('[data-testid="unit-search-results"]') === null) throw new Error("no results"); }, { timeout: 10000 });
+  const rows = [...screen.getByTestId("unit-search-results").querySelectorAll(".gis-search-result")];
+  check("searching finds the unit and shows operator, order and acreage", /Bowerston North/.test(rows[0].textContent ?? "") && /EOG Resources/.test(rows[0].textContent ?? "") && /2016-237/.test(rows[0].textContent ?? "") && /866 ac/.test(rows[0].textContent ?? ""), rows[0].textContent ?? "");
+  const fitsBeforePick = adapter.fits.length;
+  fireEvent.click(screen.getByTestId("unit-search-result-BOWERSTON_NORTH"));
+  await waitFor(() => { if (adapter.highlight?.featureId !== "BOWERSTON_NORTH") throw new Error("not highlighted"); });
+  check("picking a result highlights that unit", adapter.highlight?.layerId === "opt.odnr_units" && adapter.highlight?.featureId === "BOWERSTON_NORTH");
+  check("picking a result switches the units layer back on", adapter.layers.get("opt.odnr_units") != null && (screen.getByTestId("layer-toggle-opt.odnr_units") as HTMLInputElement).checked);
+  check("picking a result opens the unit's details", screen.getByTestId("selection-title").textContent === "Bowerston North" && /Bowerston North/.test(adapter.popup ?? ""));
+  const flown = adapter.fits[adapter.fits.length - 1];
+  check("picking a result flies to the unit's bounds", adapter.fits.length === fitsBeforePick + 1 && flown[0] < -81.17 && flown[2] > -81.17 && flown[1] < 40.43 && flown[3] > 40.43, flown?.map((v) => v.toFixed(3)).join(","));
+  check("the query clears after picking", (screen.getByTestId("unit-search-input") as HTMLInputElement).value === "" && document.querySelector('[data-testid="unit-search-results"]') === null);
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "zzzznotaunit" } });
+  await waitFor(() => { if (document.querySelector('[data-testid="unit-search-note"]') === null) throw new Error("no note"); });
+  check("a query matching nothing says so", screen.getByTestId("unit-search-note").textContent === "No matching unit");
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "" } });
+  fireEvent.click(screen.getByTestId("clear-selection"));
+  fireEvent.click(screen.getByTestId("layer-toggle-opt.odnr_units"));
+  await waitFor(() => { if (adapter.layers.get("opt.odnr_units") != null) throw new Error("units still on"); });
+
   // Click → popup with concise attributes for every layer under the point, detail panel with tabs.
   act(() => adapter.click([-81.0860, 40.5728]));
   await waitFor(() => screen.getByTestId("feature-panel"));
