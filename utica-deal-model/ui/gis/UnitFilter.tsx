@@ -3,46 +3,75 @@ import { operatorOptions, type LayerStatus } from "../../gis/index";
 
 export interface UnitFilterProps {
   status: LayerStatus;
-  operator: string | null;
-  /** Load and switch on the units layer; called when the filter is first used. */
+  operators: readonly string[];
+  /** Load and switch on the units layer; called when the filter is first opened. */
   onNeedLayer: () => void;
-  onChange: (operator: string | null) => void;
+  onToggle: (operator: string) => void;
+  onClear: () => void;
 }
 
 /**
- * Narrow the units layer to one operator. Options are the canonical operators
- * present in the data with their unit counts, so the list leads with whoever
- * holds the most acreage and the Gulfport and EOG spellings appear once each.
+ * Narrow the units layer to any number of operators, so two can be compared
+ * side by side. Options are the canonical operators present in the data with
+ * their unit counts, ordered by count, so the list leads with whoever holds
+ * the most acreage and the Gulfport and EOG spellings appear once each.
  *
- * Disabled until the layer is loaded, because the options come from the data
- * rather than a hardcoded roster. A filter restored from a previous session
- * stays selected while the layer loads, so the map does not flash the full set.
+ * Checkboxes rather than a multi-select: the rail already uses them for layer
+ * visibility, and a <select multiple> hides what is chosen behind a scroll and
+ * makes deselecting one of several a modifier-click. Collapsed by default so
+ * fourteen operators do not push the layer panel off screen.
  */
-export function UnitFilter({ status, operator, onNeedLayer, onChange }: UnitFilterProps) {
+export function UnitFilter({ status, operators, onNeedLayer, onToggle, onClear }: UnitFilterProps) {
+  const [open, setOpen] = React.useState(false);
   const data = status.state === "ready" ? status.data : null;
   const options = React.useMemo(() => (data ? operatorOptions(data) : []), [data]);
-  const ready = data !== null;
   const total = options.reduce((n, o) => n + o.count, 0);
-  const shown = operator === null ? total : options.find((o) => o.operator === operator)?.count ?? 0;
+  const selected = new Set(operators);
+  const shown = operators.length === 0 ? total : options.filter((o) => selected.has(o.operator)).reduce((n, o) => n + o.count, 0);
+
+  const summary =
+    operators.length === 0 ? "All operators"
+    : operators.length === 1 ? operators[0]
+    : `${operators.length} operators`;
 
   return (
     <div className="gis-filter" data-testid="unit-filter">
-      <select
-        className="gis-filter-select" aria-label="Filter units by operator"
-        value={operator ?? ""} disabled={!ready}
-        onFocus={() => { if (status.state === "idle") onNeedLayer(); }}
-        onChange={(e) => { const v = e.target.value; onChange(v === "" ? null : v); }}
-        data-testid="unit-filter-select"
+      <button
+        type="button" className="gis-filter-toggle" aria-expanded={open}
+        onClick={() => { setOpen((v) => !v); if (status.state === "idle") onNeedLayer(); }}
+        data-testid="unit-filter-toggle"
       >
-        <option value="">{ready ? `All operators (${total})` : "All operators"}</option>
-        {options.map((o) => <option key={o.operator} value={o.operator}>{o.operator} ({o.count})</option>)}
-        {/* A restored filter whose operator is gone after a data refresh still shows what is selected. */}
-        {operator !== null && !options.some((o) => o.operator === operator) && <option value={operator}>{operator} (0)</option>}
-      </select>
-      {operator !== null && (
-        <button type="button" className="gis-filter-clear" onClick={() => onChange(null)} data-testid="unit-filter-clear">
+        <span className="gis-filter-summary">{summary}</span>
+        <span className="gis-filter-chevron" aria-hidden="true">{open ? "▴" : "▾"}</span>
+      </button>
+      {operators.length > 0 && (
+        <button type="button" className="gis-filter-clear" onClick={onClear} data-testid="unit-filter-clear">
           {shown.toLocaleString()} of {total.toLocaleString()} units · show all
         </button>
+      )}
+      {open && (
+        <div className="gis-filter-list" role="group" aria-label="Filter units by operator" data-testid="unit-filter-list">
+          {options.length === 0
+            ? <div className="gis-search-note">{status.state === "loading" ? "Loading units…" : status.state === "error" ? "Units unavailable" : "No units loaded"}</div>
+            : options.map((o) => (
+                <label key={o.operator} className="gis-filter-option">
+                  <input
+                    type="checkbox" checked={selected.has(o.operator)} onChange={() => onToggle(o.operator)}
+                    data-testid={`unit-filter-option-${o.operator}`}
+                  />
+                  <span className="gis-filter-operator">{o.operator}</span>
+                  <span className="gis-filter-count">{o.count}</span>
+                </label>
+              ))}
+          {/* A selection whose operator is gone after a data refresh stays visible and unpickable-away otherwise. */}
+          {operators.filter((op) => !options.some((o) => o.operator === op)).map((op) => (
+            <label key={op} className="gis-filter-option">
+              <input type="checkbox" checked onChange={() => onToggle(op)} data-testid={`unit-filter-option-${op}`} />
+              <span className="gis-filter-operator">{op}</span>
+              <span className="gis-filter-count">0</span>
+            </label>
+          ))}
+        </div>
       )}
     </div>
   );

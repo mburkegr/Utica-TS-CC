@@ -2,8 +2,8 @@
  * Unit lookup: search and operator filtering over the ODNR Units layer.
  *
  * Search indexes the three things a landman has to hand — the unit name, the
- * operator, the order number. Filtering narrows the layer itself to one
- * operator, so the map draws only those units. Framework-free, so both run in
+ * operator, the order number. Filtering narrows the layer itself to a chosen
+ * set of operators, so the map draws only those units. Framework-free, so both run in
  * Node tests alongside the rest of gis/.
  *
  * Scoped to units deliberately. The reference layers are found by looking at
@@ -59,15 +59,16 @@ export function buildUnitIndex(data: LayerData): SearchEntry[] {
  * exact or leading name match above a match in the middle of a name; ties break
  * alphabetically so the order is stable for a given query.
  */
-export function searchUnits(index: readonly SearchEntry[], query: string, limit = DEFAULT_LIMIT, operator: string | null = null): SearchHit[] {
+export function searchUnits(index: readonly SearchEntry[], query: string, limit = DEFAULT_LIMIT, operators: readonly string[] = []): SearchHit[] {
   const q = normalizeQuery(query);
   if (q.length < MIN_QUERY) return [];
   const terms = q.split(" ");
+  const selected = operators.length ? new Set(operators) : null;
   const hits: SearchHit[] = [];
   for (const e of index) {
     // An active operator filter also narrows search, so a result can never be
     // a unit the map is currently hiding.
-    if (operator !== null && e.operator !== operator) continue;
+    if (selected && !selected.has(e.operator)) continue;
     if (!terms.every((t) => e.haystack.includes(t))) continue;
     const score = e.name_n === q ? 4 : e.name_n.startsWith(q) ? 3 : e.name_n.includes(q) ? 2 : 1;
     hits.push({ ...e, score });
@@ -98,14 +99,16 @@ export function operatorOptions(data: LayerData): OperatorOption[] {
 }
 
 /**
- * The layer narrowed to one operator, re-indexed so its bbox, byId and feature
- * count describe the subset — "zoom to layer" then frames that operator's
- * acreage, and the feature count reports what is actually drawn. Returns the
- * original data for a null operator, so the unfiltered case allocates nothing.
+ * The layer narrowed to the selected operators, re-indexed so its bbox, byId
+ * and feature count describe the subset — "zoom to layer" then frames that
+ * selection's acreage, and the feature count reports what is actually drawn.
+ * An empty selection means every operator and returns the original data, so
+ * the unfiltered case allocates nothing.
  */
-export function filterUnitsByOperator(def: LayerDefinition, data: LayerData, operator: string | null): LayerData {
-  if (operator === null) return data;
-  const features = data.collection.features.filter((f) => operatorOf(f.properties?.OPERATOR) === operator);
+export function filterUnitsByOperators(def: LayerDefinition, data: LayerData, operators: readonly string[]): LayerData {
+  if (operators.length === 0) return data;
+  const selected = new Set(operators);
+  const features = data.collection.features.filter((f) => selected.has(operatorOf(f.properties?.OPERATOR)));
   if (features.length === data.collection.features.length) return data;
   if (features.length === 0) return { collection: { ...data.collection, features }, bbox: data.bbox, featureCount: 0, byId: new Map() };
   return indexCollection(def, { ...data.collection, features });

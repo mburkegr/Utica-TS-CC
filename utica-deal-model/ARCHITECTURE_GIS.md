@@ -231,30 +231,38 @@ to units on purpose: the reference layers are found by looking at the map.
   bounds. Selecting before the layer has rendered is safe: the reconcile effect
   applies the highlight once the data is on the map.
 
-The **operator filter** (`operatorOptions`, `filterUnitsByOperator`,
-`ui/gis/UnitFilter.tsx`) narrows the layer to one operator. Options are the
-canonical operators present in the data with their unit counts, ordered by
-count, so the Gulfport and EOG spellings appear once each and the list leads
-with whoever holds the most acreage.
+The **operator filter** (`operatorOptions`, `filterUnitsByOperators`,
+`ui/gis/UnitFilter.tsx`) narrows the layer to any number of operators, so two
+can be compared side by side. Options are the canonical operators present in
+the data with their unit counts, ordered by count, so the Gulfport and EOG
+spellings appear once each and the list leads with whoever holds the most
+acreage.
 
-- `filterUnitsByOperator` returns the layer re-indexed on the subset, so its
+- Checkboxes in a collapsed list, not a `<select multiple>`: the rail already
+  uses checkboxes for layer visibility, a multi-select hides the choice behind
+  a scroll and makes deselecting one of several a modifier-click, and
+  collapsing keeps fourteen operators from pushing the layer panel off screen.
+- `filterUnitsByOperators` returns the layer re-indexed on the subset, so its
   bbox, `byId` and feature count all describe what is drawn: "zoom to layer"
-  frames that operator's acreage and the status line counts its units. A null
-  operator returns the original data untouched, so the unfiltered case
-  allocates nothing.
+  frames the selection's acreage and the status line counts its units. An
+  empty selection means every operator and returns the original data
+  untouched, so the unfiltered case allocates nothing.
 - `GisModule.dataFor()` is the single place that decides what a layer renders
   from. The map, the hit test, the selection, the feature count and zoom to
   layer all read through it, so they cannot disagree about what is filtered
   out — a unit hidden by the filter is also unclickable. It reads the filtered
   view through a ref, because `events` is memoized and a handler captured on
   the first render would otherwise hold a stale view.
-- Search is narrowed by the same operator, so a result can never be a unit the
-  map is hiding.
+- Search is narrowed by the same selection, so a result can never be a unit
+  the map is hiding.
 - Changing the filter clears the selection, rather than leaving the drawer open
   on a unit that is no longer drawn.
 - The choice persists with the other GIS preferences under
   `localStorage["utica-gis-v1"]`; a stored operator that no longer exists after
-  a data refresh still shows as selected, reading "(0)".
+  a data refresh still shows as ticked, reading 0, so it can be unticked rather
+  than being stuck. A preference saved while the filter was single-select
+  carries `unitOperator` instead of `unitOperators`, and is migrated on load
+  rather than dropped.
 
 ## 6. Asset, loading and caching strategy
 
