@@ -11,7 +11,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { AppShell } from "../ui/shell/AppShell";
 import { initialState } from "../ui/state/defaults";
 import { deck, lib } from "./adapters";
-import { LAYER_REGISTRY, LayerStore, type MapAdapter, type MapAdapterEvents, type LayerDefinition, type LayerData, type Selection, type Bbox, type Position } from "../gis/index";
+import { LAYER_REGISTRY, LayerStore, labelAnchor, unitStatusLabel, type MapAdapter, type MapAdapterEvents, type LayerDefinition, type LayerData, type Selection, type Bbox, type Position } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -47,8 +47,8 @@ async function main() {
   check("every reference layer is placed on the map", ["ref.counties", "ref.townships", "ref.phase_windows"].every((id) => adapter.layers.get(id) != null));
   check("county labels on by default, township labels off", adapter.labels.get("ref.counties") != null && adapter.labels.get("ref.townships") == null);
   check("map fit to the union of the reference layers once loaded", adapter.fits.length === 1 && adapter.fits[0][0] < -81.72 && adapter.fits[0][2] > -80.52 && adapter.fits[0][1] < 39.54 && adapter.fits[0][3] > 40.98, adapter.fits.map((b) => b.map((v) => v.toFixed(2)).join(",")).join(" | "));
-  check("layer panel lists the reference layers and Type Curve Areas under Layer library", ["ref.counties", "ref.townships", "ref.phase_windows", "opt.tc_areas"].every((id) => screen.getByTestId(`layer-toggle-${id}`)) && document.querySelector('[data-testid="optional-empty"]') === null);
-  check("optional layer is not fetched until toggled", store.get("opt.tc_areas").state === "idle" && adapter.layers.get("opt.tc_areas") == null);
+  check("layer panel lists the reference layers, Type Curve Areas and ODNR Units under Layer library", ["ref.counties", "ref.townships", "ref.phase_windows", "opt.tc_areas", "opt.odnr_units"].every((id) => screen.getByTestId(`layer-toggle-${id}`)) && document.querySelector('[data-testid="optional-empty"]') === null);
+  check("optional layers are not fetched until toggled", ["opt.tc_areas", "opt.odnr_units"].every((id) => store.get(id).state === "idle" && adapter.layers.get(id) == null));
   check("phase legend shows six classes", screen.getByTestId("legend-ref.phase_windows").querySelectorAll(".gis-legend-row").length === 6);
 
   // Visibility toggle removes the layer and its labels; toggling back restores both.
@@ -80,6 +80,34 @@ async function main() {
   fireEvent.click(screen.getByTestId("layer-toggle-opt.tc_areas"));
   await waitFor(() => { if (adapter.layers.get("opt.tc_areas") != null) throw new Error("tc still on"); });
   check("toggling Type Curve Areas off removes layer and labels but keeps the session cache", adapter.labels.get("opt.tc_areas") == null && store.get("opt.tc_areas").state === "ready");
+
+  // ODNR Units: the same optional-layer contract, plus a status legend and unit-first identification.
+  fireEvent.click(screen.getByTestId("layer-toggle-opt.odnr_units"));
+  await waitFor(() => { if (adapter.layers.get("opt.odnr_units") == null) throw new Error("units not on map"); }, { timeout: 10000 });
+  check("toggling ODNR Units lazy-loads all 789 units and places them on the map", store.get("opt.odnr_units").state === "ready" && /5 layers · 1,016 features/.test(screen.getByTestId("gis-status").textContent ?? ""), screen.getByTestId("gis-status").textContent ?? "");
+  check("ODNR Units draws unlabeled", adapter.labels.get("opt.odnr_units") == null && document.querySelector('[data-testid="label-toggle-opt.odnr_units"]') === null);
+  const legendLabels = [...screen.getByTestId("legend-opt.odnr_units").querySelectorAll(".gis-legend-row")].map((r) => r.textContent);
+  check("ODNR Units legend shows the four expanded ODNR status names", legendLabels.join("|") === "Pending|Effective|Chief's Order Issued|No Longer Effective", legendLabels.join("|"));
+  act(() => adapter.click([-81.1761460636001, 40.43147027485477]));
+  await waitFor(() => { if (adapter.highlight?.layerId !== "opt.odnr_units") throw new Error("unit not primary"); });
+  check("clicking inside a unit identifies the unit first, with the reference layers as tabs", screen.getByTestId("selection-title").textContent === "Bowerston North" && screen.getByTestId("selection-tab-ref.counties") !== null);
+  check("unit popup carries operator, order, status, formation and acreage", ["Operator", "Order no.", "Status", "Formation", "Acres"].every((l) => new RegExp(`${l.replace(".", "\\.")}</dt>`).test(adapter.popup ?? "")) && /Operator<\/dt><dd>EOG Resources</.test(adapter.popup ?? "") && /Acres<\/dt><dd>866/.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150));
+  check("Bowerston North is filed as EOG Ohio and displays as EOG Resources", (store.get("opt.odnr_units") as { state: "ready"; data: LayerData }).data.byId.get("BOWERSTON_NORTH")!.properties!.OPERATOR === "EOG Ohio");
+  check("unit popup shows the expanded status, not the raw code", /Status<\/dt><dd>Effective</.test(adapter.popup ?? ""), adapter.popup?.match(/Status<\/dt><dd>[^<]*/)?.[0]);
+
+  // A Gulfport unit: the popup and drawer show the canonical operator, the drawer's raw attribute list keeps the filed value.
+  const gulfport = (store.get("opt.odnr_units") as { state: "ready"; data: LayerData }).data.collection.features.find((f) => f.properties!.OPERATOR === "Gulfport Energy Transferred to Gulfport Appalachia")!;
+  act(() => adapter.click(labelAnchor(gulfport.geometry)!));
+  await waitFor(() => { if (adapter.highlight?.layerId !== "opt.odnr_units") throw new Error("gulfport unit not primary"); });
+  check("a Gulfport unit displays the canonical operator", /Operator<\/dt><dd>Gulfport Appalachia</.test(adapter.popup ?? ""), adapter.popup?.match(/Operator<\/dt><dd>[^<]*/)?.[0]);
+  const panelText = screen.getByTestId("feature-panel").textContent ?? "";
+  check("the detail drawer keeps the operator name as ODNR filed it", panelText.includes("Gulfport Energy Transferred to Gulfport Appalachia") && panelText.includes("Gulfport Appalachia"));
+  const rawStatus = String(gulfport.properties!.STATUS);
+  check("the detail drawer keeps the raw status code alongside the expanded name", panelText.includes(`STATUS${rawStatus}`) && panelText.includes(`Status${unitStatusLabel(rawStatus)}`), `raw ${rawStatus} / shown ${unitStatusLabel(rawStatus)}`);
+  fireEvent.click(screen.getByTestId("clear-selection"));
+  fireEvent.click(screen.getByTestId("layer-toggle-opt.odnr_units"));
+  await waitFor(() => { if (adapter.layers.get("opt.odnr_units") != null) throw new Error("units still on"); });
+  check("toggling ODNR Units off removes the layer but keeps the session cache", store.get("opt.odnr_units").state === "ready");
 
   // Click → popup with concise attributes for every layer under the point, detail panel with tabs.
   act(() => adapter.click([-81.0860, 40.5728]));

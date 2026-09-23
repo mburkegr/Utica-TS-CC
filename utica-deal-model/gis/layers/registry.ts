@@ -76,6 +76,64 @@ export const REFERENCE_LAYERS: LayerDefinition[] = [
   },
 ];
 
+/**
+ * ODNR unitization order status. The raw code is what the source files and what
+ * stays in the feature's STATUS property; these are the official ODNR expansions,
+ * used wherever a status is shown to a reader (legend, popup, detail drawer).
+ * NLE does not occur in the current extract but is registered so a data refresh
+ * that introduces it renders with a style and a label instead of the fallback.
+ */
+export const UNIT_STATUS_LABELS: Record<string, string> = {
+  PEN: "Pending",
+  EFF: "Effective",
+  COI: "Chief's Order Issued",
+  NLE: "No Longer Effective",
+};
+/** Legend order: the order of an application through the process. */
+export const UNIT_STATUS_ORDER = ["PEN", "EFF", "COI", "NLE"] as const;
+/** Expanded status name for display; unknown codes show verbatim rather than being hidden. */
+export function unitStatusLabel(code: unknown): string {
+  const k = String(code ?? "").trim().toUpperCase();
+  return UNIT_STATUS_LABELS[k] ?? (k || "Unknown");
+}
+const unitStatusClass = (code: string, token: string, dashArray?: string): PathStyle & { label: string } => ({
+  label: UNIT_STATUS_LABELS[code], stroke: `--gis-unit-${token}-line` as StyleToken, weight: 1.6, opacity: 1, dashArray,
+  fill: `--gis-unit-${token}-fill` as StyleToken, fillOpacity: 0.18,
+});
+
+/**
+ * Operator canonicalization. ODNR files an operator name free-form, so one
+ * company arrives under several spellings. Display, legends and grouping use
+ * the canonical name; the filed value is never rewritten — it stays in the
+ * feature's OPERATOR property and shows in the detail drawer's full attribute
+ * list. Keys are the filed value, whitespace-collapsed and lower-cased.
+ *
+ * Entries are added only on explicit approval, never inferred from a name that
+ * merely looks like a variant of another.
+ */
+export const OPERATOR_ALIASES: Record<string, string> = {
+  "gulfport energy transferred to gulfport appalachia": "Gulfport Appalachia",
+  "gulfport appalachia": "Gulfport Appalachia",
+  "gulfport energy": "Gulfport Appalachia",
+  "inr onio": "INR Ohio",
+  "inr ohio": "INR Ohio",
+  // EOG Ohio and EOG Resources are the same operator; the Eclipse unit is now
+  // EOG's, and "OG Resources" is a dropped leading E.
+  "eog ohio": "EOG Resources",
+  "eog resources": "EOG Resources",
+  "eclipse": "EOG Resources",
+  "og resources": "EOG Resources",
+  // EQT acquired Rice Energy in 2017.
+  "rice drilling d": "EQT",
+  // "Tiburon" is deliberately absent: it is an active operator in its own
+  // right, not a short spelling of "Tiburon Oil and Gas Ohio".
+};
+/** Canonical operator name for display and grouping; an unaliased name passes through as filed. */
+export function operatorOf(value: unknown): string {
+  const raw = String(value ?? "").replace(/\s+/g, " ").trim();
+  return OPERATOR_ALIASES[raw.toLowerCase()] ?? raw;
+}
+
 /** Optional layers (Layer Library). Off by default, lazy-loaded on first toggle, cached for the session. */
 export const OPTIONAL_LAYERS: LayerDefinition[] = [
   {
@@ -99,6 +157,35 @@ export const OPTIONAL_LAYERS: LayerDefinition[] = [
     },
     label: { field: "TC_NUMBER", defaultOn: true, className: "gis-label gis-label-tc", avoidCollisions: true, fontPx: 12, paddingPx: 4 },
     style: { kind: "static", legendLabel: "Type curve area", style: { stroke: "--gis-tc-line", weight: 1.6, opacity: 1, dashArray: "6 3", fill: "--gis-tc-fill", fillOpacity: 0.12 } },
+  },
+  {
+    id: "opt.odnr_units", name: "ODNR Units", category: "units", tier: "optional", geometry: "polygon",
+    source: { kind: "asset", manifestKey: "odnr_units" }, loading: "lazy", defaultVisible: false, renderer: "canvas",
+    zIndex: 50, idField: "UNIT_ID", nameField: "UNIT_NAME", selectable: true, selectionPriority: 50,
+    description: "Ohio unitization units ordered under ORC 1509.28 (789 polygons), colored by order status: Pending, Effective, Chief's Order Issued, No Longer Effective. Canvas-rendered: at this feature count SVG paths make panning sluggish.",
+    attribution: "ODNR Division of Oil and Gas Resources Management, Unitizations shapefile (NAD83 Ohio South ftUS, reprojected to EPSG:4326)",
+    popup: {
+      title: (p) => String(p.UNIT_NAME ?? "Unit"),
+      fields: [
+        { key: "OPERATOR", label: "Operator", derive: (p) => operatorOf(p.OPERATOR) },
+        { key: "ORDER_NO", label: "Order no.", format: "text" },
+        { key: "STATUS", label: "Status", derive: (p) => unitStatusLabel(p.STATUS) },
+        { key: "FORMATION", label: "Formation", format: "text" },
+        { key: "ACRES", label: "Acres", format: "integer" },
+        { key: "EDIT_DATE", label: "ODNR updated", format: "date" },
+      ],
+    },
+    style: {
+      kind: "categorical", field: "STATUS", order: [...UNIT_STATUS_ORDER],
+      classes: {
+        PEN: unitStatusClass("PEN", "pen"),
+        EFF: unitStatusClass("EFF", "eff"),
+        COI: unitStatusClass("COI", "coi"),
+        // Dashed as well as grey: "no longer effective" should read as inactive without relying on hue alone.
+        NLE: unitStatusClass("NLE", "nle", "5 3"),
+      },
+      fallback: { label: "Other", stroke: "--gis-unit-other-line", weight: 1.4, fill: "--gis-unit-other-fill", fillOpacity: 0.15 },
+    },
   },
 ];
 

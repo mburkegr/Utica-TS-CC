@@ -33,6 +33,14 @@
         "id": "dcf8b2737fb80d98fce2c994d403a7f3",
         "url": "/_blob/dcf8b2737fb80d98fce2c994d403a7f3"
       }
+    },
+    "odnr_units": {
+      "file": "gis-data/layers/ODNR_Units_EPSG4326.geojson",
+      "sha256": "1279574f72075da588d86cf941b337874d30415aa1bde2fac3c4fc378a0fc826",
+      "asset": {
+        "id": "24df5712bee4b0970e67608c7a8f2b7e",
+        "url": "/_blob/24df5712bee4b0970e67608c7a8f2b7e"
+      }
     }
   }
 }
