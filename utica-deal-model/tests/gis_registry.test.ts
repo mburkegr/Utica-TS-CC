@@ -10,6 +10,12 @@ console.log("\nGIS layer registry");
 
 const issues = validateRegistry(LAYER_REGISTRY, manifest as any);
 check("registry validates", issues.length === 0, issues.join("; "));
+// Reference layers identify by name alone: the drawer's full attribute list
+// still carries GEOID and land area for anyone who wants them.
+check("townships, counties and phase windows show a name and no summary rows", ["ref.townships", "ref.counties", "ref.phase_windows"].every((id) => getLayer(id).popup.fields.length === 0));
+check("a title-only popup still names its feature", getLayer("ref.counties").popup.title({ NAMELSAD: "Carroll County" }) === "Carroll County" && getLayer("ref.phase_windows").popup.title({ Area: "North Lean Condensate" }) === "North Lean Condensate");
+check("the phase legend still classifies, even with the rows gone", phaseOf("North Lean Condensate") === "Lean Condensate" && regionOf("North Lean Condensate") === "North");
+check("a popup with no title is still rejected", validateRegistry([{ ...getLayer("ref.counties"), popup: { fields: [] } } as any], manifest as any).some((i) => /needs a title/.test(i)));
 check("three reference layers; type curve areas, ODNR units and unit D&C are the optional layers", REFERENCE_LAYERS.length === 3 && OPTIONAL_LAYERS.map((l) => l.id).join(",") === "opt.tc_areas,opt.odnr_units,opt.unit_dc");
 check("every optional layer is off by default and lazy", OPTIONAL_LAYERS.every((l) => l.defaultVisible === false && l.loading === "lazy"));
 check("Type Curve Areas: labeled by TC_NUMBER with collision avoidance, above every reference layer in the selection stack", getLayer("opt.tc_areas").label?.field === "TC_NUMBER" && getLayer("opt.tc_areas").label?.avoidCollisions === true && getLayer("opt.tc_areas").selectionPriority > Math.max(...REFERENCE_LAYERS.map((l) => l.selectionPriority)));
@@ -50,8 +56,8 @@ check("Unit D&C: canvas renderer, drawn and selected above the units layer", dc.
 check("Unit D&C: labels on by default, with collision avoidance and no toggle needed", dc.label?.defaultOn === true && dc.label?.avoidCollisions === true && dc.label?.field === "DC_PER_FT");
 check("the label reads dollars per foot, rounded", dc.label!.derive!({ DC_PER_FT: 747.51 }) === "$748/ft" && dc.label!.derive!({ DC_PER_FT: 1307.54 }) === "$1,308/ft");
 check("a missing D&C labels as n/a rather than NaN", dcPerFt(undefined) === "n/a" && dcPerFt(null) === "n/a" && dcPerFt("747") === "n/a");
-check("Unit D&C popup leads with D&C then the hearing date", dc.popup.fields.map((f) => f.key).join(",") === "DC_PER_FT,HEARING_DATE,WELLS,AVG_LATERAL_FT,OPERATOR,STATUS");
-check("hearing dates render without a timezone shifting the day", hearingDate("2026-10-21") === "21 Oct 2026" && hearingDate("2024-01-01") === "1 Jan 2024" && hearingDate("2025-12-31") === "31 Dec 2025");
+check("Unit D&C popup leads with D&C then the hearing date, and carries the unit acreage", dc.popup.fields.map((f) => f.key).join(",") === "DC_PER_FT,HEARING_DATE,WELLS,AVG_LATERAL_FT,ACRES,OPERATOR,STATUS");
+check("hearing dates render short, without a timezone shifting the day", hearingDate("2025-06-18") === "6/18/25" && hearingDate("2026-10-21") === "10/21/26" && hearingDate("2024-01-01") === "1/1/24" && hearingDate("2025-12-31") === "12/31/25");
 check("a malformed or missing hearing date degrades rather than throwing", hearingDate("") === "n/a" && hearingDate(null) === "n/a" && hearingDate("not a date") === "not a date");
 check("lateral length carries its unit", lateralFt(18595) === "18,595 ft" && lateralFt(undefined) === "n/a");
 // The heatmap: six cost bands, cheapest first, with an exclusive upper bound.

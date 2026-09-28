@@ -25,9 +25,12 @@ export function FeaturePanel({ selection, hits, dispatch, onZoomFeature }: { sel
       <div className="gis-detail-body">
         <div className="kicker">{active.def.name}</div>
         <h4 data-testid="selection-title">{title}</h4>
-        <table className="gis-attrs"><tbody>
-          {active.def.popup.fields.map((f) => <tr key={f.label}><th>{f.label}</th><td>{formatValue(f.derive ? f.derive(props) : props[f.key], f.format)}</td></tr>)}
-        </tbody></table>
+        {/* Layers that identify by name alone have no summary rows; the full list below still has everything. */}
+        {active.def.popup.fields.length > 0 && (
+          <table className="gis-attrs"><tbody>
+            {active.def.popup.fields.map((f) => <tr key={f.label}><th>{f.label}</th><td>{formatValue(f.derive ? f.derive(props) : props[f.key], f.format)}</td></tr>)}
+          </tbody></table>
+        )}
         <details style={{ marginTop: 10 }}>
           <summary className="muted">All attributes ({Object.keys(props).length})</summary>
           <table className="gis-attrs"><tbody>
