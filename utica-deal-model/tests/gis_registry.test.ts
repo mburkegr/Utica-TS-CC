@@ -23,7 +23,13 @@ check("every manifest layer is referenced by exactly one registry entry", Object
 check("draw order: phase windows, townships, counties, then operational layers on top", layersInDrawOrder().map((l) => l.id).join(",") === "ref.phase_windows,ref.townships,ref.counties,opt.tc_areas,opt.odnr_units,opt.unit_dc");
 check("selection priority: unit D&C, ODNR units, type curve areas, townships, counties, phase windows", [...LAYER_REGISTRY].sort((a, b) => b.selectionPriority - a.selectionPriority).map((l) => l.id).join(",") === "opt.unit_dc,opt.odnr_units,opt.tc_areas,ref.townships,ref.counties,ref.phase_windows");
 check("county labels on by default, township labels behind a toggle with a minimum zoom", LAYER_REGISTRY.find((l) => l.id === "ref.counties")!.label!.defaultOn === true && LAYER_REGISTRY.find((l) => l.id === "ref.townships")!.label!.defaultOn === false && (LAYER_REGISTRY.find((l) => l.id === "ref.townships")!.label!.minZoom ?? 0) >= 9);
-check("phase legend lists six classes in geological order", legendFor(LAYER_REGISTRY.find((l) => l.id === "ref.phase_windows")!).map((e) => e.key).join("|") === PHASE_ORDER.join("|"));
+// Phase windows are one unfilled white outline now, not six filled classes.
+const phaseLayer = getLayer("ref.phase_windows");
+check("the phase legend is a single boundary row", legendFor(phaseLayer).map((e) => e.label).join("|") === "Phase window boundary");
+check("phase windows draw unfilled, so the legend swatch is a line", phaseLayer.style.kind === "static" && (phaseLayer.style as any).style.fill === undefined && legendFor(phaseLayer)[0].kind === "line");
+check("the phase outline is one shared token, not a colour per class", phaseLayer.style.kind === "static" && (phaseLayer.style as any).style.stroke === "--gis-phase-line");
+check("PHASE_ORDER is still the geological order for anything listing phases", PHASE_ORDER.join("|") === "Oil|Rich Condensate|Condensate|Lean Condensate|Wet Gas|Dry Gas");
+check("counties keep their own outline token, distinct from townships", getLayer("ref.counties").style.kind === "static" && (getLayer("ref.counties").style as any).style.stroke === "--gis-county-line" && (getLayer("ref.townships").style as any).style.stroke === "--gis-township-line");
 check("phase classifier strips region and merges Dry Gas East/West", phaseOf("North Rich Condensate") === "Rich Condensate" && phaseOf("Core Dry Gas East") === "Dry Gas" && phaseOf("South Oil") === "Oil" && regionOf("Core Wet Gas") === "Core");
 
 // ODNR Units: the unit layer is canvas-rendered (789 polygons), keyed on UNIT_ID and styled by order status.

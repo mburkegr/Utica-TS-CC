@@ -49,7 +49,8 @@ async function main() {
   check("map fit to the union of the reference layers once loaded", adapter.fits.length === 1 && adapter.fits[0][0] < -81.72 && adapter.fits[0][2] > -80.52 && adapter.fits[0][1] < 39.54 && adapter.fits[0][3] > 40.98, adapter.fits.map((b) => b.map((v) => v.toFixed(2)).join(",")).join(" | "));
   check("layer panel lists the reference layers, Type Curve Areas and ODNR Units under Layer library", ["ref.counties", "ref.townships", "ref.phase_windows", "opt.tc_areas", "opt.odnr_units"].every((id) => screen.getByTestId(`layer-toggle-${id}`)) && document.querySelector('[data-testid="optional-empty"]') === null);
   check("optional layers are not fetched until toggled", ["opt.tc_areas", "opt.odnr_units"].every((id) => store.get(id).state === "idle" && adapter.layers.get(id) == null));
-  check("phase legend shows six classes", screen.getByTestId("legend-ref.phase_windows").querySelectorAll(".gis-legend-row").length === 6);
+  const phaseRows = [...screen.getByTestId("legend-ref.phase_windows").querySelectorAll(".gis-legend-row")].map((r) => r.textContent);
+  check("the phase legend is one unfilled boundary row, not six colours", phaseRows.join("|") === "Phase window boundary", phaseRows.join("|"));
 
   // Visibility toggle removes the layer and its labels; toggling back restores both.
   fireEvent.click(screen.getByTestId("layer-toggle-ref.counties"));

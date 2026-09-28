@@ -4,7 +4,7 @@
  * every attribute the registry's popups and labels read, and matches its manifest digest.
  */
 import * as fs from "node:fs"; import * as path from "node:path"; import { createHash } from "node:crypto";
-import { LAYER_REGISTRY, validateCollection, indexCollection, bboxWithin, bboxOfGeometry, OHIO_REGION_BBOX, unionBbox, hitTest, labelAnchor, pointInGeometry, placeLabels, operatorOf, type Bbox, type FeatureCollection } from "../gis/index";
+import { LAYER_REGISTRY, validateCollection, indexCollection, bboxWithin, bboxOfGeometry, OHIO_REGION_BBOX, unionBbox, hitTest, labelAnchor, pointInGeometry, placeLabels, operatorOf, phaseOf, PHASE_ORDER, type Bbox, type FeatureCollection } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -53,11 +53,12 @@ for (const def of LAYER_REGISTRY) {
 check("registered: counties, townships, phase windows, type curve areas, ODNR units, unit D&C", Object.keys(EXPECTED).every((id) => LAYER_REGISTRY.some((l) => l.id === id)));
 check("map default extent (union bbox) encompasses every reference layer", union !== null && loaded.every((l) => bboxWithin(l.data.bbox, union!)), union?.map((v) => v.toFixed(3)).join(","));
 
-// Phase names all classify into the six legend classes.
+// Phase windows draw as one unfilled outline now, but every Area must still
+// resolve to a known phase, since the popup title and PHASE_ORDER rely on it.
 const phase = loaded.find((l) => l.def.id === "ref.phase_windows")!;
-const spec = phase.def.style as Extract<typeof phase.def.style, { kind: "categorical" }>;
-const keys = phase.data.collection.features.map((f) => spec.classify!(f.properties!.Area, f));
-check("every phase window maps to a legend class", keys.every((k) => spec.classes[k]), [...new Set(keys)].join("|"));
+const phaseKeys = phase.data.collection.features.map((f) => phaseOf(f.properties!.Area));
+check("every phase window resolves to a known phase", phaseKeys.every((k) => (PHASE_ORDER as readonly string[]).includes(k)), [...new Set(phaseKeys)].join("|"));
+check("every phase window still names itself for the popup title", phase.data.collection.features.every((f) => String(f.properties!.Area ?? "").length > 0));
 
 // ODNR units: every order status classifies into a legend class, and the ACRES attribute (carried over
 // from the source Shape_STAr, in NAD83 Ohio South square feet) agrees with the reprojected EPSG:4326

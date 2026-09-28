@@ -10,34 +10,28 @@ const REGION_PREFIX = /^(Core|North|South)\s+/;
 export function phaseOf(area: unknown): string { return String(area ?? "").replace(REGION_PREFIX, "").replace(/^Dry Gas (East|West)$/, "Dry Gas"); }
 export function regionOf(area: unknown): string { const m = REGION_PREFIX.exec(String(area ?? "")); return m ? m[1] : ""; }
 
-/** Geologically ordered from oil to dry gas. Colors are muted categorical tokens; none implies quality. */
+/**
+ * Geologically ordered from oil to dry gas. The windows are no longer drawn in
+ * these colours — they are an unfilled white outline, because the coloured
+ * fills made the map too busy under the operational layers — but the order is
+ * still the right one for anything that lists the phases, and `phaseOf` and
+ * `regionOf` still derive them from the `Area` attribute.
+ */
 export const PHASE_ORDER = ["Oil", "Rich Condensate", "Condensate", "Lean Condensate", "Wet Gas", "Dry Gas"] as const;
-const phaseClass = (key: string, token: string): PathStyle & { label: string } => ({
-  label: key, stroke: `--gis-phase-${token}-line` as StyleToken, weight: 1.8, opacity: 1, fill: `--gis-phase-${token}-fill` as StyleToken, fillOpacity: 0.28,
-});
 
 export const REFERENCE_LAYERS: LayerDefinition[] = [
   {
     id: "ref.phase_windows", name: "Utica Phase Windows", category: "reference", tier: "reference", geometry: "polygon",
     source: { kind: "asset", manifestKey: "phase_windows" }, loading: "eager", defaultVisible: true, renderer: "svg",
     zIndex: 10, idField: "Area", nameField: "Area", selectable: true, selectionPriority: 10,
-    description: "Interpreted Utica/Point Pleasant fluid windows by region (Core, North, South). Drawn beneath county and township lines. The source `Id` attribute is 0 for every polygon, so `Area` is the feature identity.",
+    description: "Interpreted Utica/Point Pleasant fluid windows by region (Core, North, South). Drawn unfilled beneath county and township lines; click one to read its area name. The source `Id` attribute is 0 for every polygon, so `Area` is the feature identity.",
     attribution: "Internal interpretation (OH_TC_Areas)",
     // The title is the full area name, so Region and Phase rows would only
     // repeat it; `regionOf` and `phaseOf` still drive the legend classes.
     popup: { title: (p) => String(p.Area ?? "Phase window"), fields: [] },
-    style: {
-      kind: "categorical", field: "Area", classify: (v) => phaseOf(v), order: [...PHASE_ORDER],
-      classes: {
-        "Oil": phaseClass("Oil", "oil"),
-        "Rich Condensate": phaseClass("Rich Condensate", "rich"),
-        "Condensate": phaseClass("Condensate", "cond"),
-        "Lean Condensate": phaseClass("Lean Condensate", "lean"),
-        "Wet Gas": phaseClass("Wet Gas", "wet"),
-        "Dry Gas": phaseClass("Dry Gas", "dry"),
-      },
-      fallback: { label: "Other", stroke: "--gis-phase-other-line", weight: 1, fill: "--gis-phase-other-fill", fillOpacity: 0.2 },
-    },
+    // No fill and one white outline: the phase is read from the popup title, not
+    // from a colour, and six filled classes under the unit layers was too much.
+    style: { kind: "static", legendLabel: "Phase window boundary", style: { stroke: "--gis-phase-line", weight: 1.6, opacity: 0.9 } },
   },
   {
     id: "ref.townships", name: "Townships", category: "reference", tier: "reference", geometry: "polygon",

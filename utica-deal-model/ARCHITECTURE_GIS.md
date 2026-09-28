@@ -106,10 +106,23 @@ light, system-dark and forced-dark. The adapter resolves them with
 legend always agree. `tests/gis_registry.test.ts` fails if a token is missing
 from any theme block.
 
-Phase windows use a categorical style keyed on `Area` with the region prefix
-stripped (`North Rich Condensate` → `Rich Condensate`, `Core Dry Gas East` →
-`Dry Gas`). Legend order is geological (Oil → Dry Gas); the palette is muted
-and categorical and does not encode quality or risk.
+Phase windows draw as an **unfilled white outline**, one static style rather
+than six filled classes: the coloured fills made the map too busy once the
+unit layers went on top of them. The phase is read from the popup title, which
+is the full area name. `phaseOf` and `regionOf` still derive the phase and
+region from `Area` (`North Rich Condensate` → `Rich Condensate`, `Core Dry Gas
+East` → `Dry Gas`) and `PHASE_ORDER` is still the geological order, for
+anything that needs to list or group phases; nothing draws from them today.
+
+White is 17.5:1 against the dark map surface and **1.26:1 against the light
+one**, so in the light theme the outline is deliberately faint rather than
+absent. That is the intended recession, not an oversight; a light-theme value
+with real contrast would have to stop being white.
+
+Counties use a saturated blue (`#1E5FA8` light, `#6BA6E8` dark, 5.1:1 and
+6.9:1 against their map surfaces) rather than the near-white `pale-300` the
+dark theme used before. Townships stay on the muted sky tokens and are thin
+and dashed, so the two read apart by hue and by weight.
 
 **A popup may have no fields.** Townships, counties and phase windows identify
 by name alone: a click there is asking "which one is this", and repeating
