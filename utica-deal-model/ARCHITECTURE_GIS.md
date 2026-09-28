@@ -92,7 +92,7 @@ interface LayerDefinition {
   renderer: "svg" | "canvas";               // svg by default; canvas once a layer is dense (ODNR units)
   zIndex: number;                           // draw order; phase 10 < townships 20 < counties 30 < tc 40 < units 50
   idField; nameField; selectable; selectionPriority;   // units 50 > tc 40 > townships 30 > counties 20 > phase 10
-  popup: { title(props), fields: [{ key, label, format?, derive? }] };
+  popup: { title(props), fields: [{ key, label, format?, derive? }] };  // fields may be empty: name only
   label?: { field, derive?, defaultOn, toggleLabel?, minZoom?, className,
             avoidCollisions?, priority?, fontPx?, paddingPx? };
   style: { kind: "static", style, legendLabel }
@@ -110,6 +110,14 @@ Phase windows use a categorical style keyed on `Area` with the region prefix
 stripped (`North Rich Condensate` → `Rich Condensate`, `Core Dry Gas East` →
 `Dry Gas`). Legend order is geological (Oil → Dry Gas); the palette is muted
 and categorical and does not encode quality or risk.
+
+**A popup may have no fields.** Townships, counties and phase windows identify
+by name alone: a click there is asking "which one is this", and repeating
+GEOID, land area or the region and phase the title already spells out only
+crowds the answer. `popup.title` is still required and `validateRegistry`
+enforces it; the detail drawer's full attribute list carries every raw value,
+so nothing is lost. `regionOf` and `phaseOf` remain — they classify the legend
+even though no popup row reads them.
 
 ## 5. Reference vs optional layers
 

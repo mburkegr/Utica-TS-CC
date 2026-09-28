@@ -23,13 +23,9 @@ export const REFERENCE_LAYERS: LayerDefinition[] = [
     zIndex: 10, idField: "Area", nameField: "Area", selectable: true, selectionPriority: 10,
     description: "Interpreted Utica/Point Pleasant fluid windows by region (Core, North, South). Drawn beneath county and township lines. The source `Id` attribute is 0 for every polygon, so `Area` is the feature identity.",
     attribution: "Internal interpretation (OH_TC_Areas)",
-    popup: {
-      title: (p) => String(p.Area ?? "Phase window"),
-      fields: [
-        { key: "Area", label: "Region", derive: (p) => regionOf(p.Area) || "n/a" },
-        { key: "Area", label: "Phase", derive: (p) => phaseOf(p.Area) },
-      ],
-    },
+    // The title is the full area name, so Region and Phase rows would only
+    // repeat it; `regionOf` and `phaseOf` still drive the legend classes.
+    popup: { title: (p) => String(p.Area ?? "Phase window"), fields: [] },
     style: {
       kind: "categorical", field: "Area", classify: (v) => phaseOf(v), order: [...PHASE_ORDER],
       classes: {
@@ -48,14 +44,9 @@ export const REFERENCE_LAYERS: LayerDefinition[] = [
     source: { kind: "asset", manifestKey: "townships" }, loading: "eager", defaultVisible: true, renderer: "svg",
     zIndex: 20, idField: "GEOID", nameField: "NAME", selectable: true, selectionPriority: 30,
     description: "Civil township boundaries for the ten Utica-area counties.", attribution: "US Census TIGER/Line 2025 (county subdivisions)",
-    popup: {
-      title: (p) => String(p.NAMELSAD ?? p.NAME ?? "Township"),
-      fields: [
-        { key: "COUNTY_NAME", label: "County", derive: (p) => `${p.COUNTY_NAME ?? ""} County` },
-        { key: "GEOID", label: "GEOID", format: "text" },
-        { key: "ALAND", label: "Land acres", format: "acres_from_m2" },
-      ],
-    },
+    // Name only: a click is asking "which township is this", and the drawer's
+    // full attribute list is there for anyone who wants GEOID or land area.
+    popup: { title: (p) => String(p.NAMELSAD ?? p.NAME ?? "Township"), fields: [] },
     label: { field: "NAME", defaultOn: false, toggleLabel: "Township Names", minZoom: 10, className: "gis-label gis-label-township" },
     style: { kind: "static", legendLabel: "Township boundary", style: { stroke: "--gis-township-line", weight: 0.9, dashArray: "4 3", opacity: 0.95, fill: "--gis-township-fill", fillOpacity: 0 } },
   },
@@ -64,13 +55,7 @@ export const REFERENCE_LAYERS: LayerDefinition[] = [
     source: { kind: "asset", manifestKey: "counties" }, loading: "eager", defaultVisible: true, renderer: "svg",
     zIndex: 30, idField: "GEOID", nameField: "NAME", selectable: true, selectionPriority: 20,
     description: "County boundaries: Belmont, Carroll, Columbiana, Guernsey, Harrison, Jefferson, Monroe, Noble, Stark, Tuscarawas.", attribution: "US Census TIGER/Line 2025 (counties)",
-    popup: {
-      title: (p) => String(p.NAMELSAD ?? p.NAME ?? "County"),
-      fields: [
-        { key: "GEOID", label: "GEOID", format: "text" },
-        { key: "ALAND", label: "Land acres", format: "acres_from_m2" },
-      ],
-    },
+    popup: { title: (p) => String(p.NAMELSAD ?? p.NAME ?? "County"), fields: [] },
     label: { field: "NAME", defaultOn: true, className: "gis-label gis-label-county" },
     style: { kind: "static", legendLabel: "County boundary", style: { stroke: "--gis-county-line", weight: 2, opacity: 1, fill: "--gis-county-fill", fillOpacity: 0.05 } },
   },
@@ -177,14 +162,13 @@ const dcClass = (key: string, label: string): PathStyle & { label: string } => (
   fill: `--gis-dc-${key}-fill` as StyleToken, fillOpacity: 0.62,
 });
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /**
- * "2026-10-21" → "21 Oct 2026". Parsed from the string rather than through
- * Date, which would shift the day across a timezone for a date-only value.
+ * "2025-06-18" → "6/18/25". Parsed from the string rather than through Date,
+ * which would shift the day across a timezone for a date-only value.
  */
 export function hearingDate(value: unknown): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? "").trim());
-  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : String(value ?? "") || "n/a";
+  return m ? `${Number(m[2])}/${Number(m[3])}/${m[1].slice(2)}` : String(value ?? "") || "n/a";
 }
 
 /** Optional layers (Layer Library). Off by default, lazy-loaded on first toggle, cached for the session. */
@@ -253,6 +237,7 @@ export const OPTIONAL_LAYERS: LayerDefinition[] = [
         { key: "HEARING_DATE", label: "Hearing date", derive: (p) => hearingDate(p.HEARING_DATE) },
         { key: "WELLS", label: "Wells", format: "integer" },
         { key: "AVG_LATERAL_FT", label: "Avg lateral", derive: (p) => lateralFt(p.AVG_LATERAL_FT) },
+        { key: "ACRES", label: "Unit acres", format: "integer" },
         { key: "OPERATOR", label: "Operator", derive: (p) => operatorOf(p.OPERATOR) },
         { key: "STATUS", label: "Status", derive: (p) => unitStatusLabel(p.STATUS) },
       ],
@@ -297,7 +282,7 @@ export function validateRegistry(defs: readonly LayerDefinition[], manifest: Man
     if (d.source.kind === "asset" && !manifest.layers[d.source.manifestKey]) issues.push(`${d.id}: manifest key "${d.source.manifestKey}" is not in gis-data/manifest.json`);
     if (d.style.kind === "categorical" && d.style.order) for (const k of d.style.order) if (!d.style.classes[k]) issues.push(`${d.id}: legend order names unknown class "${k}"`);
     if (d.label && d.label.defaultOn === false && !d.label.toggleLabel) issues.push(`${d.id}: labels that are off by default need a toggleLabel`);
-    if (!d.popup.fields.length) issues.push(`${d.id}: popup has no fields`);
+    if (typeof d.popup.title !== "function") issues.push(`${d.id}: popup needs a title`);
   }
   return issues;
 }

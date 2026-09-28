@@ -196,8 +196,8 @@ async function main() {
   await waitFor(() => { if (adapter.highlight?.layerId !== "opt.unit_dc") throw new Error("dc not primary"); });
   check("clicking a D&C unit identifies it above the plain units layer", adapter.highlight?.featureId === "AKERS_HN_FRA_EAST" && screen.getByTestId("selection-title").textContent === "Akers HN FRA East");
   // The popup escapes its field labels, so "D&C" appears as "D&amp;C" in the HTML.
-  check("the popup leads with the cost and the hearing date", /D&amp;C<\/dt><dd>\$748\/ft</.test(adapter.popup ?? "") && /Hearing date<\/dt><dd>13 Mar 2024</.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 130));
-  check("the popup carries wells and average lateral", /Wells<\/dt><dd>1</.test(adapter.popup ?? "") && /Avg lateral<\/dt><dd>18,595 ft</.test(adapter.popup ?? ""));
+  check("the popup leads with the cost and the hearing date", /D&amp;C<\/dt><dd>\$748\/ft</.test(adapter.popup ?? "") && /Hearing date<\/dt><dd>3\/13\/24</.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 130));
+  check("the popup carries wells, average lateral and unit acreage", /Wells<\/dt><dd>1</.test(adapter.popup ?? "") && /Avg lateral<\/dt><dd>18,595 ft</.test(adapter.popup ?? "") && /Unit acres<\/dt><dd>348</.test(adapter.popup ?? ""));
   check("the drawer keeps the raw values behind the formatted ones", /747\.51/.test(screen.getByTestId("feature-panel").textContent ?? "") && /2024-03-13/.test(screen.getByTestId("feature-panel").textContent ?? ""));
   fireEvent.click(screen.getByTestId("clear-selection"));
   fireEvent.click(screen.getByTestId("layer-toggle-opt.unit_dc"));
@@ -208,14 +208,14 @@ async function main() {
   act(() => adapter.click([-81.0860, 40.5728]));
   await waitFor(() => screen.getByTestId("feature-panel"));
   check("popup lists township, county and phase window", adapter.popup !== null && /Center township/.test(adapter.popup) && /Carroll County/.test(adapter.popup) && /North Lean Condensate/.test(adapter.popup), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 160));
-  check("county popup is concise: GEOID and land acres", /GEOID<\/dt><dd>39019/.test(adapter.popup ?? "") && /Land acres<\/dt><dd>[\d,]+/.test(adapter.popup ?? ""));
-  check("township popup carries its county", /County<\/dt><dd>Carroll County/.test(adapter.popup ?? ""));
-  check("phase popup shows region and phase", /Region<\/dt><dd>North/.test(adapter.popup ?? "") && /Phase<\/dt><dd>Lean Condensate/.test(adapter.popup ?? ""));
+  check("the county section is its name alone, with no attribute rows", /Carroll County/.test(adapter.popup ?? "") && !/GEOID<\/dt>/.test(adapter.popup ?? "") && !/Land acres<\/dt>/.test(adapter.popup ?? ""));
+  check("the township section is its name alone", /Center township/.test(adapter.popup ?? "") && !/County<\/dt>/.test(adapter.popup ?? ""));
+  check("the phase window shows its area name without repeating region and phase", /North Lean Condensate/.test(adapter.popup ?? "") && !/Region<\/dt>/.test(adapter.popup ?? "") && !/Phase<\/dt>/.test(adapter.popup ?? ""));
   check("detail panel opens on the township with county and phase tabs", screen.getByTestId("selection-title").textContent === "Center township" && screen.getByTestId("selection-tab-ref.counties") !== null && screen.getByTestId("selection-tab-ref.phase_windows") !== null);
   check("township is highlighted", adapter.highlight?.layerId === "ref.townships" && adapter.highlight?.featureId === "3901912896");
   fireEvent.click(screen.getByTestId("selection-tab-ref.counties"));
   await waitFor(() => { if (adapter.highlight?.layerId !== "ref.counties") throw new Error("not switched"); });
-  check("choosing the county tab moves the highlight and shows the full attribute set", adapter.highlight?.featureId === "39019" && screen.getByTestId("selection-title").textContent === "Carroll County" && /ALAND/.test(screen.getByTestId("feature-panel").textContent ?? ""));
+  check("choosing the county tab moves the highlight and the drawer still lists every raw attribute", adapter.highlight?.featureId === "39019" && screen.getByTestId("selection-title").textContent === "Carroll County" && /ALAND/.test(screen.getByTestId("feature-panel").textContent ?? "") && /GEOID/.test(screen.getByTestId("feature-panel").textContent ?? ""));
   const fitsBefore = adapter.fits.length;
   fireEvent.click(screen.getByTestId("zoom-to-feature"));
   check("zoom to feature fits the county bbox", adapter.fits.length === fitsBefore + 1 && adapter.fits[adapter.fits.length - 1][0] > -81.4 && adapter.fits[adapter.fits.length - 1][2] < -80.7);
