@@ -1,0 +1,57 @@
+# Runs what a contributor runs locally, so "tests pass" is a fact on the PR
+# rather than a claim in its description.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: utica-deal-model
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: utica-deal-model/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Every tracked GeoJSON must still match the digest the manifest records,
+      # so a layer cannot be edited without the manifest noticing.
+      - name: Verify GIS data digests
+        run: node gis-data/scripts/manifest.mjs verify
+
+      - name: Build
+        run: npm run build
+
+      # dist/index.html is committed and is what gets published, so it has to be
+      # the build of the source beside it. esbuild is deterministic here, so a
+      # non-empty diff means someone changed source without rebuilding.
+      - name: dist/index.html is up to date with its source
+        run: |
+          if ! git diff --quiet -- dist/index.html; then
+            echo "::error::dist/index.html does not match a fresh build. Run 'npm run build' and commit the result."
+            git diff --stat -- dist/index.html
+            exit 1
+          fi
+
+      # The suite reads the golden fixtures from FIXTURE_ROOT; they ship zipped.
+      - name: Unzip golden fixtures
+        run: unzip -q fixtures/utica_fixtures.zip -d "$RUNNER_TEMP/fixtures"
+
+      - name: Test
+        run: npm test
+        env:
+          FIXTURE_ROOT: ${{ runner.temp }}/fixtures/utica_fixtures

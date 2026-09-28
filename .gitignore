@@ -1,0 +1,13 @@
+# Dependencies. Installed from package-lock.json, never committed — a stray
+# `git add -A` here once swept 2,700 files into a commit.
+node_modules/
+
+# Python bytecode from the gis-data build scripts.
+__pycache__/
+*.py[cod]
+
+# The golden fixtures are tracked as fixtures/utica_fixtures.zip; the unzipped
+# copy a test run needs is not.
+utica_fixtures/
+
+.DS_Store
