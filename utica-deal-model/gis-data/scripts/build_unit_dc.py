@@ -37,8 +37,11 @@ NAME_ALIASES = {
     "McMillen TC RSH Unit": "McMillen TC RSH Unit-",                     # trailing hyphen in the shapefile
     "Rogue HWS18 A": "Rogue HWS 18A",                                    # spacing
     "Gingerich N LND GR Unit": "Gingerich North LND GR",                 # N vs North
-    "Bearcats NB BUF 210H Unit": "Bearcats NB BUF",                      # well number appended
     "Cologie N GRN HR 3H": "Cologie N GRN HR",                           # well number appended
+    # "Bearcats NB BUF 210H Unit" is deliberately absent. It is a later
+    # single-well hearing, and aliasing it onto "Bearcats NB BUF" let it
+    # supersede that unit's own three-well row. The unit keeps the three-well
+    # hearing; the 210H row is left unmatched.
     "Davis Farms CR UNI South Extension": "Davis Farms South Extension",  # extra CR UNI
     "Shula TWR27 A": "Shula TWR A",                                      # extra 27
     "Snyder CR UNI": "Snyder GR UNI",                                    # CR vs GR

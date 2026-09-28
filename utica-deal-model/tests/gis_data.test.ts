@@ -111,8 +111,12 @@ check("every unit carries a positive well count and lateral length", dcFeatures.
 check("a unit appears once, so a superseded hearing cannot double it", new Set(dcFeatures.map((f) => f.properties!.UNIT_ID)).size === dcFeatures.length);
 const known = dcFeatures.find((f) => f.properties!.UNIT_NAME === "Akers HN FRA East")!;
 check("a spot-checked unit carries the workbook's row", known.properties!.DC_PER_FT === 747.51 && known.properties!.HEARING_DATE === "2024-03-13" && known.properties!.WELLS === 1 && known.properties!.AVG_LATERAL_FT === 18595, JSON.stringify(known.properties));
-// The nine approved aliases are the join's only judgement call; assert one landed.
+// The eight approved aliases are the join's only judgement call; assert one landed.
 check("an alias-joined unit carries the shapefile's spelling, not the workbook's", dcFeatures.some((f) => f.properties!.UNIT_NAME === "Cheetah NHS C") && !dcFeatures.some((f) => f.properties!.UNIT_NAME === "Cheetah NSH C"));
+// Bearcats NB BUF keeps its own three-well hearing: aliasing the later single-well
+// "210H" row onto it would let one well's cost stand in for the unit's.
+const bearcats = dcFeatures.find((f) => f.properties!.UNIT_NAME === "Bearcats NB BUF")!;
+check("Bearcats NB BUF carries its three-well hearing, not the single-well one", bearcats.properties!.WELLS === 3 && bearcats.properties!.DC_PER_FT === 775.91 && bearcats.properties!.HEARING_DATE === "2025-05-07" && bearcats.properties!.AVG_LATERAL_FT === 20492, JSON.stringify(bearcats.properties));
 
 // Hit test at a known location: Carroll County seat (Carrollton) lies in Carroll County, Center Township.
 const hits = hitTest([-81.0860, 40.5728], loaded.filter((l) => l.def.tier === "reference"));

@@ -294,18 +294,23 @@ node gis-data/scripts/manifest.mjs digest
   " Unit" dropped, case folded, punctuation as a separator. That alone joins
   358 of 402 rows, and the script refuses to run if two shapefile units ever
   share a normalized key.
-- **`NAME_ALIASES`** adds nine rows where the two files spell one unit
+- **`NAME_ALIASES`** adds eight rows where the two files spell one unit
   differently (`Cheetah NSH C` / `Cheetah NHS C`, `Rogue HWS18 A` /
   `Rogue HWS 18A`, and so on). Each was confirmed individually. The
   shapefile's spelling is authoritative, so the output always carries it.
-  Everything else is left unmatched rather than guessed: the remaining 35
+  Everything else is left unmatched rather than guessed: the remaining 36
   workbook rows are units that are genuinely not in the shapefile.
 - **Duplicates** keep the latest hearing date, on the basis that a later
   hearing supersedes an earlier one. An alias can also collapse two
   differently named rows onto one unit; the script reports those separately,
-  because they are not simple re-hearings and deserve a look. Three do at
-  present, and Bearcats NB BUF is the one to watch: the kept row is a
-  single-well hearing where the dropped one covered three wells.
+  because they are not simple re-hearings and deserve a look. Two do at
+  present, both re-hearings of the same well count.
+
+  This is why `Bearcats NB BUF 210H Unit` is deliberately *not* aliased onto
+  `Bearcats NB BUF`: it is a later single-well hearing, and aliasing it let
+  one well's cost supersede the unit's own three-well row. The unit keeps the
+  three-well hearing and the 210H row is left unmatched. `gis_data` asserts
+  it, so the decision cannot quietly revert.
 - **D&C is dollars per lateral foot** (508 - 1308 across the current file) and
   `LL` is the average lateral per well, which is why it is fractional when
   `Wells` > 1. `dcPerFt`, `lateralFt` and `hearingDate` in the registry format
