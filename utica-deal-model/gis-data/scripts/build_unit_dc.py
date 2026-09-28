@@ -1,54 +1,64 @@
 #!/usr/bin/env python3
 """
-Joins the D&C workbook to the ODNR units layer and writes the Unit D&C GeoJSON.
+Builds the Unit D&C layer from the tracked D&C rows and the ODNR units layer.
 
-    pip install openpyxl
-    python3 gis-data/scripts/build_unit_dc.py <workbook.xlsx> \
+    python3 gis-data/scripts/build_unit_dc.py build \
+        gis-data/source/unit_dc.csv \
         gis-data/layers/ODNR_Units_EPSG4326.geojson \
         gis-data/layers/ODNR_Units_DC_EPSG4326.geojson
 
-The workbook is one row per unit hearing: Hearing Date, Unit, Wells, LL, D&C.
-D&C is dollars per foot (508 - 1308 across the current file); LL is the average
-lateral per well, which is why it is fractional when Wells > 1.
+    python3 gis-data/scripts/build_unit_dc.py extract <workbook.xlsx> \
+        gis-data/source/unit_dc.csv          # refresh the rows from a full workbook
 
-Matching. Unit names are joined on a normalized key: whitespace collapsed, a
-trailing " Unit" dropped, case folded and punctuation treated as a separator.
-That alone joins 358 of 402 rows with no ambiguity — no two shapefile units
-share a normalized key. NAME_ALIASES adds the rows where the two files spell
-one unit differently; each was confirmed individually, and the shapefile's
-spelling is authoritative for the output. Everything else is left unmatched
-rather than guessed: most of the remainder are units that genuinely are not in
-the shapefile, not misspellings.
+`gis-data/source/unit_dc.csv` is the tracked source of truth: one row per unit
+hearing, sorted by date then name so a diff reads cleanly. A single new unit is
+one appended line, which is why the rows live here rather than only in a
+spreadsheet that exists outside the repo. `extract` regenerates the whole file
+from a workbook when a full refresh arrives; it needs openpyxl, `build` does
+not.
+
+D&C is dollars per lateral foot. `avg_lateral_ft` is the average lateral per
+well, which is why the workbook's value is fractional when a unit has more
+than one well.
+
+Matching. Unit names join to the shapefile on a normalized key: whitespace
+collapsed, a trailing " Unit" dropped, case folded and punctuation treated as
+a separator. That alone joins the large majority; NAME_ALIASES covers the rows
+where the two files spell one unit differently. Each alias was confirmed
+individually, and the shapefile's spelling is authoritative for the output.
+Everything else is left unmatched rather than guessed: most of the remainder
+are units that genuinely are not in the shapefile yet.
 
 Duplicates. A unit appearing twice keeps its latest hearing date, on the basis
 that a later hearing supersedes an earlier one.
 """
+import csv
 import json
 import re
 import sys
 import collections
 import datetime
-import openpyxl
 
-# Workbook spelling -> shapefile spelling. Confirmed one by one; the shapefile
-# is treated as correct, so the output always carries its name.
+# Row spelling -> shapefile spelling. Confirmed one by one; the shapefile is
+# treated as correct, so the output always carries its name.
 NAME_ALIASES = {
     "Cheetah NSH C": "Cheetah NHS C",                                    # transposed letters
     "McMillen TC RSH Unit": "McMillen TC RSH Unit-",                     # trailing hyphen in the shapefile
     "Rogue HWS18 A": "Rogue HWS 18A",                                    # spacing
     "Gingerich N LND GR Unit": "Gingerich North LND GR",                 # N vs North
     "Cologie N GRN HR 3H": "Cologie N GRN HR",                           # well number appended
+    "Davis Farms CR UNI South Extension": "Davis Farms South Extension",  # extra CR UNI
+    "Shula TWR27 A": "Shula TWR A",                                      # extra 27
+    "Snyder CR UNI": "Snyder GR UNI",                                    # CR vs GR
     # "Bearcats NB BUF 210H Unit" is deliberately absent. It is a later
     # single-well hearing, and aliasing it onto "Bearcats NB BUF" let it
     # supersede that unit's own three-well row. The unit keeps the three-well
     # hearing; the 210H row is left unmatched.
-    "Davis Farms CR UNI South Extension": "Davis Farms South Extension",  # extra CR UNI
-    "Shula TWR27 A": "Shula TWR A",                                      # extra 27
-    "Snyder CR UNI": "Snyder GR UNI",                                    # CR vs GR
 }
 
 # Attributes carried over from the units layer so the D&C layer stands alone.
 CARRIED = ["UNIT_ID", "UNIT_NAME", "OPERATOR", "STATUS", "FORMATION", "ACRES"]
+FIELDNAMES = ["hearing_date", "unit", "wells", "avg_lateral_ft", "dc_per_ft"]
 
 
 def norm(s):
@@ -70,9 +80,41 @@ def iso(v):
     return str(v or "")[:10]
 
 
-def main():
-    xlsx, units_path, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
-    rows = [r for r in openpyxl.load_workbook(xlsx, data_only=True)["Sheet1"].iter_rows(min_row=2, values_only=True) if r[1]]
+def extract(xlsx_path, csv_path):
+    """Regenerate the tracked rows from a full workbook."""
+    import openpyxl  # only needed for a refresh, so not a dependency of `build`
+
+    rows = []
+    for r in openpyxl.load_workbook(xlsx_path, data_only=True)["Sheet1"].iter_rows(min_row=2, values_only=True):
+        if not r[1]:
+            continue
+        dc, ll = num(r[4]), num(r[3])
+        rows.append({
+            "hearing_date": iso(r[0]),
+            "unit": re.sub(r"\s+", " ", str(r[1])).strip(),
+            "wells": int(r[2]) if num(r[2]) is not None else "",
+            "avg_lateral_ft": round(ll) if ll is not None else "",
+            "dc_per_ft": round(dc, 2) if dc is not None else "",
+        })
+    rows.sort(key=lambda x: (x["hearing_date"], x["unit"]))
+    with open(csv_path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=FIELDNAMES, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    print(f"  wrote {csv_path}: {len(rows)} rows")
+
+
+def read_rows(csv_path):
+    with open(csv_path, newline="") as fh:
+        reader = csv.DictReader(fh)
+        missing = set(FIELDNAMES) - set(reader.fieldnames or [])
+        if missing:
+            raise SystemExit(f"{csv_path} is missing columns: {sorted(missing)}")
+        return list(reader)
+
+
+def build(csv_path, units_path, out_path):
+    rows = read_rows(csv_path)
     units = json.load(open(units_path))
     by_key = {}
     for f in units["features"]:
@@ -81,18 +123,17 @@ def main():
     if collisions:
         raise SystemExit(f"shapefile names collide after normalization, refusing to guess: {collisions}")
 
-    # Latest hearing date wins. An alias can also collapse two workbook rows onto
-    # one unit, which is reported separately: those are not simple re-hearings of
+    # Latest hearing date wins. An alias can also collapse two rows onto one
+    # unit, which is reported separately: those are not simple re-hearings of
     # an identically named unit and deserve a look.
     best, seen = {}, collections.defaultdict(list)
     for r in rows:
-        name = str(r[1]).strip()
+        name = r["unit"].strip()
         key = norm(NAME_ALIASES.get(name, name))
-        date = iso(r[0])
-        rec = {"date": date, "name": name, "wells": num(r[2]), "ll": num(r[3]), "dc": num(r[4])}
+        rec = {"date": r["hearing_date"], "name": name, "wells": num(r["wells"]),
+               "ll": num(r["avg_lateral_ft"]), "dc": num(r["dc_per_ft"])}
         seen[key].append(rec)
-        prior = best.get(key)
-        if prior is None or date > prior["date"]:
+        if key not in best or rec["date"] > best[key]["date"]:
             best[key] = rec
     superseded = len(rows) - len(best)
     collapsed = {k: v for k, v in seen.items() if len(v) > 1 and len({r["name"] for r in v}) > 1}
@@ -125,8 +166,8 @@ def main():
         json.dump(fc, fh, separators=(",", ":"))
         fh.write("\n")
 
-    aliased = sum(1 for r in rows if str(r[1]).strip() in NAME_ALIASES)
-    print(f"  workbook rows      : {len(rows)}")
+    aliased = sum(1 for r in rows if r["unit"].strip() in NAME_ALIASES)
+    print(f"  source rows        : {len(rows)}")
     print(f"  superseded dupes   : {superseded}")
     print(f"  joined via alias   : {aliased}")
     print(f"  units with D&C     : {len(features)}")
@@ -136,12 +177,22 @@ def main():
     print(f"  D&C $/ft           : min {min(d):.2f}  median {sorted(d)[len(d)//2]:.2f}  max {max(d):.2f}")
     if collapsed:
         print("\n  alias collapsed two differently named rows onto one unit (latest kept):")
-        for k, v in collapsed.items():
+        for v in collapsed.values():
             for i, r in enumerate(sorted(v, key=lambda x: x["date"], reverse=True)):
                 print(f"    {'KEPT   ' if i == 0 else 'dropped'} {r['date']}  {r['name']!r}  wells={int(r['wells'] or 0)} ll={r['ll']:.0f} dc={r['dc']:.2f}")
     print("\n  unmatched:")
     for n in sorted(unmatched):
         print(f"    {n}")
+
+
+def main():
+    args = sys.argv[1:]
+    if args[:1] == ["build"] and len(args) == 4:
+        build(args[1], args[2], args[3])
+    elif args[:1] == ["extract"] and len(args) == 3:
+        extract(args[1], args[2])
+    else:
+        raise SystemExit(__doc__)
 
 
 if __name__ == "__main__":
