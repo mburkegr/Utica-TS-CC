@@ -1,19 +1,14 @@
 /* ---------------------------------------------------------------------------
    GIS module. Map colors are tokens resolved at render time by the map adapter
    (gis/map/style.ts), so layers follow light/dark like the rest of the app.
-   Phase-window fills are a muted categorical set in geological order; none of
-   them is meant to read as good/bad. Reference lines stay above the fills.
+   Phase windows are an unfilled white outline: the coloured fills made the map
+   too busy under the operational layers. Counties are a saturated blue so they
+   read as the county framework without going white on a dark map.
    --------------------------------------------------------------------------- */
 :root{
-  --gis-county-line:var(--slate-600);--gis-county-fill:var(--sky-500);
+  --gis-county-line:#1E5FA8;--gis-county-fill:var(--sky-500);
+  --gis-phase-line:#FFFFFF;
   --gis-township-line:var(--sky-700);--gis-township-fill:var(--sky-500);
-  --gis-phase-oil-line:#7E6A45;--gis-phase-oil-fill:#C9B48F;
-  --gis-phase-rich-line:#6F5474;--gis-phase-rich-fill:#B9A3B8;
-  --gis-phase-cond-line:#4F7290;--gis-phase-cond-fill:#A9BCC9;
-  --gis-phase-lean-line:#4E8070;--gis-phase-lean-fill:#A3C2B5;
-  --gis-phase-wet-line:#8A6058;--gis-phase-wet-fill:#C8A9A2;
-  --gis-phase-dry-line:#5F5F6E;--gis-phase-dry-fill:#B7B7BF;
-  --gis-phase-other-line:var(--grey-500);--gis-phase-other-fill:var(--grey-300);
   --gis-highlight-line:var(--navy-500);--gis-highlight-fill:var(--sky-500);
   --gis-tc-line:var(--navy-600);--gis-tc-fill:var(--navy-300);--gis-label-tc-text:#FFFFFF;--gis-label-tc-bg:var(--navy-600);--gis-label-tc-ring:rgba(255,255,255,.85);
   --gis-unit-eff-line:#1F6F4A;--gis-unit-eff-fill:#4FA97D;
@@ -33,15 +28,9 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --gis-county-line:var(--pale-300);--gis-county-fill:var(--sky-500);
+    --gis-county-line:#6BA6E8;--gis-county-fill:var(--sky-500);
+    --gis-phase-line:#FFFFFF;
     --gis-township-line:var(--sky-500);--gis-township-fill:var(--sky-500);
-    --gis-phase-oil-line:#E8D4A8;--gis-phase-oil-fill:#B9A47F;
-    --gis-phase-rich-line:#E0C6DF;--gis-phase-rich-fill:#A78FA6;
-    --gis-phase-cond-line:#CDDEEC;--gis-phase-cond-fill:#8FA6B8;
-    --gis-phase-lean-line:#C8E4D6;--gis-phase-lean-fill:#89AA9C;
-    --gis-phase-wet-line:#EDCFC8;--gis-phase-wet-fill:#B0918A;
-    --gis-phase-dry-line:#D9D9E2;--gis-phase-dry-fill:#9A9AA6;
-    --gis-phase-other-line:var(--grey-400);--gis-phase-other-fill:var(--grey-600);
     --gis-highlight-line:var(--pale-100);--gis-highlight-fill:var(--sky-500);
     --gis-tc-line:var(--pale-200);--gis-tc-fill:var(--sky-400);--gis-label-tc-text:var(--navy-900);--gis-label-tc-bg:var(--pale-200);--gis-label-tc-ring:rgba(18,26,36,.85);
     --gis-unit-eff-line:#6FD3A2;--gis-unit-eff-fill:#2E8A62;
@@ -61,15 +50,9 @@
   }
 }
 :root[data-theme="dark"]{
-  --gis-county-line:var(--pale-300);--gis-county-fill:var(--sky-500);
+  --gis-county-line:#6BA6E8;--gis-county-fill:var(--sky-500);
+  --gis-phase-line:#FFFFFF;
   --gis-township-line:var(--sky-500);--gis-township-fill:var(--sky-500);
-  --gis-phase-oil-line:#E8D4A8;--gis-phase-oil-fill:#B9A47F;
-  --gis-phase-rich-line:#E0C6DF;--gis-phase-rich-fill:#A78FA6;
-  --gis-phase-cond-line:#CDDEEC;--gis-phase-cond-fill:#8FA6B8;
-  --gis-phase-lean-line:#C8E4D6;--gis-phase-lean-fill:#89AA9C;
-  --gis-phase-wet-line:#EDCFC8;--gis-phase-wet-fill:#B0918A;
-  --gis-phase-dry-line:#D9D9E2;--gis-phase-dry-fill:#9A9AA6;
-  --gis-phase-other-line:var(--grey-400);--gis-phase-other-fill:var(--grey-600);
   --gis-highlight-line:var(--pale-100);--gis-highlight-fill:var(--sky-500);
   --gis-tc-line:var(--pale-200);--gis-tc-fill:var(--sky-400);--gis-label-tc-text:var(--navy-900);--gis-label-tc-bg:var(--pale-200);--gis-label-tc-ring:rgba(18,26,36,.85);
   --gis-unit-eff-line:#6FD3A2;--gis-unit-eff-fill:#2E8A62;
