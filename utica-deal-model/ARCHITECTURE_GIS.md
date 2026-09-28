@@ -40,7 +40,7 @@ Two layers, mirroring the engine/ui split:
 | `gis/search.ts` | Unit lookup: search index + ranked query, and the operator filter |
 | `gis/index.ts` | Public surface; `ui/` imports only from here (enforced by `tests/ui_boundary.test.ts`) |
 | `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `UnitSearch`, `UnitFilter`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
-| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units, Unit D&C), `manifest.json`, `scripts/` |
+| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units, Unit D&C), `source/` tracked source rows, `manifest.json`, `scripts/` |
 
 Data flow: `LayerStore.loadEager()` on first open → store status changes
 re-render `GisModule` → an effect reconciles the `MapAdapter` (`setLayer`,
@@ -323,16 +323,37 @@ Two consequences worth keeping:
 - The label is a **badge** with its own background, not haloed text: one text
   colour cannot contrast with six different fills beneath it.
 
-`gis-data/scripts/build_unit_dc.py` does the join and is the reproducible
-record of it. Run it again when either the workbook or the ODNR shapefile is
-refreshed:
+**`gis-data/source/unit_dc.csv` is the tracked source of truth** - one row per
+unit hearing, sorted by date then name so a diff reads cleanly. The workbook
+it came from stays upstream and outside the repo; the CSV is the checked-in
+extract, which is what makes the layer reproducible without hunting for a
+spreadsheet, and what makes a single new unit a one-line change:
 
 ```
-python3 gis-data/scripts/build_unit_dc.py <workbook.xlsx> \
+hearing_date,unit,wells,avg_lateral_ft,dc_per_ft
+2026-11-12,Beardsley South Unit,2,21155,699.6
+```
+
+`build_unit_dc.py` has two commands. `build` joins the rows to the units layer
+and needs nothing but the standard library; `extract` regenerates the whole
+CSV from a full workbook and needs openpyxl.
+
+```
+# a new unit: append its row to the CSV, then
+python3 gis-data/scripts/build_unit_dc.py build \
+    gis-data/source/unit_dc.csv \
     gis-data/layers/ODNR_Units_EPSG4326.geojson \
     gis-data/layers/ODNR_Units_DC_EPSG4326.geojson
 node gis-data/scripts/manifest.mjs digest
+
+# a full workbook refresh: regenerate the rows first, then build as above
+python3 gis-data/scripts/build_unit_dc.py extract <workbook.xlsx> \
+    gis-data/source/unit_dc.csv
 ```
+
+A row whose unit is not yet in the ODNR shapefile stays in the CSV and shows
+up in the script's unmatched list; it joins on its own the next time the
+shapefile is refreshed, with no further edit.
 
 - **Matching** is on a normalized name: whitespace collapsed, a trailing
   " Unit" dropped, case folded, punctuation as a separator. That alone joins
