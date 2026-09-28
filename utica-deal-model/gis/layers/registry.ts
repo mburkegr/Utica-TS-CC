@@ -134,6 +134,26 @@ export function operatorOf(value: unknown): string {
   return OPERATOR_ALIASES[raw.toLowerCase()] ?? raw;
 }
 
+// ---------------------------------------------------------------------------
+// D&C display
+// ---------------------------------------------------------------------------
+
+const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+/** Drilling and completion cost, dollars per lateral foot: the map label and the popup both read this. */
+export function dcPerFt(value: unknown): string { return typeof value === "number" ? `$${whole.format(value)}/ft` : "n/a"; }
+/** Lateral length with its unit, so the popup row is readable without a column header. */
+export function lateralFt(value: unknown): string { return typeof value === "number" ? `${whole.format(value)} ft` : "n/a"; }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/**
+ * "2026-10-21" → "21 Oct 2026". Parsed from the string rather than through
+ * Date, which would shift the day across a timezone for a date-only value.
+ */
+export function hearingDate(value: unknown): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? "").trim());
+  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : String(value ?? "") || "n/a";
+}
+
 /** Optional layers (Layer Library). Off by default, lazy-loaded on first toggle, cached for the session. */
 export const OPTIONAL_LAYERS: LayerDefinition[] = [
   {
@@ -186,6 +206,28 @@ export const OPTIONAL_LAYERS: LayerDefinition[] = [
       },
       fallback: { label: "Other", stroke: "--gis-unit-other-line", weight: 1.4, fill: "--gis-unit-other-fill", fillOpacity: 0.15 },
     },
+  },
+  {
+    id: "opt.unit_dc", name: "Unit D&C", category: "units", tier: "optional", geometry: "polygon",
+    source: { kind: "asset", manifestKey: "unit_dc" }, loading: "lazy", defaultVisible: false, renderer: "canvas",
+    zIndex: 60, idField: "UNIT_ID", nameField: "UNIT_NAME", selectable: true, selectionPriority: 60,
+    description: "The 363 ODNR units that carry a drilling-and-completion cost, labeled with D&C in dollars per lateral foot. Geometry is the unit polygon; D&C, hearing date, well count and average lateral come from the internal workbook.",
+    attribution: "ODNR Unitizations geometry joined to the internal D&C workbook (see gis-data/scripts/build_unit_dc.py)",
+    popup: {
+      title: (p) => String(p.UNIT_NAME ?? "Unit"),
+      fields: [
+        { key: "DC_PER_FT", label: "D&C", derive: (p) => dcPerFt(p.DC_PER_FT) },
+        { key: "HEARING_DATE", label: "Hearing date", derive: (p) => hearingDate(p.HEARING_DATE) },
+        { key: "WELLS", label: "Wells", format: "integer" },
+        { key: "AVG_LATERAL_FT", label: "Avg lateral", derive: (p) => lateralFt(p.AVG_LATERAL_FT) },
+        { key: "OPERATOR", label: "Operator", derive: (p) => operatorOf(p.OPERATOR) },
+        { key: "STATUS", label: "Status", derive: (p) => unitStatusLabel(p.STATUS) },
+      ],
+    },
+    // Labels on by default: seeing the number without clicking is the point of
+    // the layer. Collision avoidance drops the rest, largest unit first.
+    label: { field: "DC_PER_FT", derive: (p) => dcPerFt(p.DC_PER_FT), defaultOn: true, className: "gis-label gis-label-dc", avoidCollisions: true, fontPx: 11, paddingPx: 3 },
+    style: { kind: "static", legendLabel: "Unit with D&C", style: { stroke: "--gis-dc-line", weight: 1.8, opacity: 1, fill: "--gis-dc-fill", fillOpacity: 0.16 } },
   },
 ];
 

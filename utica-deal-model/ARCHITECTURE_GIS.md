@@ -40,7 +40,7 @@ Two layers, mirroring the engine/ui split:
 | `gis/search.ts` | Unit lookup: search index + ranked query, and the operator filter |
 | `gis/index.ts` | Public surface; `ui/` imports only from here (enforced by `tests/ui_boundary.test.ts`) |
 | `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `UnitSearch`, `UnitFilter`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
-| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units), `manifest.json`, `scripts/manifest.mjs` |
+| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units, Unit D&C), `manifest.json`, `scripts/` |
 
 Data flow: `LayerStore.loadEager()` on first open → store status changes
 re-render `GisModule` → an effect reconciles the `MapAdapter` (`setLayer`,
@@ -115,7 +115,7 @@ and categorical and does not encode quality or risk.
 
 | | Reference | Optional (Layer Library) |
 |---|---|---|
-| Examples | Counties, Townships, Phase windows | Type Curve Areas (shipped), ODNR Units (shipped), Producing wells, Dale wells, Estimated future units, Evaluation areas, Active opportunities, Ownership, Laterals, Operator datasets |
+| Examples | Counties, Townships, Phase windows | Type Curve Areas (shipped), ODNR Units (shipped), Unit D&C (shipped), Producing wells, Dale wells, Estimated future units, Evaluation areas, Active opportunities, Ownership, Laterals, Operator datasets |
 | Loading | Eager on first GIS open, in parallel | Lazy on first toggle |
 | Default | Visible | Off |
 | Cache | Session | Session; `LayerStore.evict` available |
@@ -263,6 +263,54 @@ acreage.
   than being stuck. A preference saved while the filter was single-select
   carries `unitOperator` instead of `unitOperators`, and is migrated on load
   rather than dropped.
+
+### Unit D&C
+
+**Unit D&C** (`opt.unit_dc`, `gis-data/layers/ODNR_Units_DC_EPSG4326.geojson`,
+363 polygons) is the subset of units that carry a drilling-and-completion cost,
+labeled with it. Off by default, lazy, canvas-rendered, `zIndex` and
+`selectionPriority` 60 so it draws and identifies above the plain units layer.
+Unlike every other layer its **labels are on by default**: seeing the number
+without clicking is the point of the layer, and collision avoidance drops the
+rest, largest unit first. Popup: D&C, hearing date, wells, average lateral,
+operator, status.
+
+The geometry is the unit polygon copied verbatim from the units layer, keyed on
+`UNIT_ID`, so the two layers can never disagree about where a unit is;
+`gis_data` asserts the polygons are identical rather than re-derived.
+
+`gis-data/scripts/build_unit_dc.py` does the join and is the reproducible
+record of it. Run it again when either the workbook or the ODNR shapefile is
+refreshed:
+
+```
+python3 gis-data/scripts/build_unit_dc.py <workbook.xlsx> \
+    gis-data/layers/ODNR_Units_EPSG4326.geojson \
+    gis-data/layers/ODNR_Units_DC_EPSG4326.geojson
+node gis-data/scripts/manifest.mjs digest
+```
+
+- **Matching** is on a normalized name: whitespace collapsed, a trailing
+  " Unit" dropped, case folded, punctuation as a separator. That alone joins
+  358 of 402 rows, and the script refuses to run if two shapefile units ever
+  share a normalized key.
+- **`NAME_ALIASES`** adds nine rows where the two files spell one unit
+  differently (`Cheetah NSH C` / `Cheetah NHS C`, `Rogue HWS18 A` /
+  `Rogue HWS 18A`, and so on). Each was confirmed individually. The
+  shapefile's spelling is authoritative, so the output always carries it.
+  Everything else is left unmatched rather than guessed: the remaining 35
+  workbook rows are units that are genuinely not in the shapefile.
+- **Duplicates** keep the latest hearing date, on the basis that a later
+  hearing supersedes an earlier one. An alias can also collapse two
+  differently named rows onto one unit; the script reports those separately,
+  because they are not simple re-hearings and deserve a look. Three do at
+  present, and Bearcats NB BUF is the one to watch: the kept row is a
+  single-well hearing where the dropped one covered three wells.
+- **D&C is dollars per lateral foot** (508 - 1308 across the current file) and
+  `LL` is the average lateral per well, which is why it is fractional when
+  `Wells` > 1. `dcPerFt`, `lateralFt` and `hearingDate` in the registry format
+  them; `hearingDate` parses the ISO string directly rather than through
+  `Date`, which would shift the day across a timezone for a date-only value.
 
 ## 6. Asset, loading and caching strategy
 

@@ -181,6 +181,28 @@ async function main() {
   fireEvent.click(screen.getByTestId("layer-toggle-opt.odnr_units"));
   await waitFor(() => { if (adapter.layers.get("opt.odnr_units") != null) throw new Error("units still on"); });
 
+  // Unit D&C: a toggleable layer of only the units that have a cost, labelled with it.
+  check("Unit D&C is listed and not fetched until toggled", screen.getByTestId("layer-toggle-opt.unit_dc") !== null && store.get("opt.unit_dc").state === "idle");
+  fireEvent.click(screen.getByTestId("layer-toggle-opt.unit_dc"));
+  await waitFor(() => { if (adapter.layers.get("opt.unit_dc") == null) throw new Error("dc not on map"); }, { timeout: 10000 });
+  check("toggling Unit D&C loads only the units that carry a cost", store.get("opt.unit_dc").state === "ready" && adapter.layers.get("opt.unit_dc")?.featureCount === 363);
+  check("its labels are on without asking, and there is no label toggle to find", adapter.labels.get("opt.unit_dc") != null && document.querySelector('[data-testid="label-toggle-opt.unit_dc"]') === null);
+  check("the legend reads as the D&C subset", screen.getByTestId("legend-opt.unit_dc").textContent === "Unit with D&C", screen.getByTestId("legend-opt.unit_dc").textContent ?? "");
+
+  const dcData = (store.get("opt.unit_dc") as { state: "ready"; data: LayerData }).data;
+  const akers = dcData.byId.get("AKERS_HN_FRA_EAST")!;
+  act(() => adapter.click(labelAnchor(akers.geometry)!));
+  await waitFor(() => { if (adapter.highlight?.layerId !== "opt.unit_dc") throw new Error("dc not primary"); });
+  check("clicking a D&C unit identifies it above the plain units layer", adapter.highlight?.featureId === "AKERS_HN_FRA_EAST" && screen.getByTestId("selection-title").textContent === "Akers HN FRA East");
+  // The popup escapes its field labels, so "D&C" appears as "D&amp;C" in the HTML.
+  check("the popup leads with the cost and the hearing date", /D&amp;C<\/dt><dd>\$748\/ft</.test(adapter.popup ?? "") && /Hearing date<\/dt><dd>13 Mar 2024</.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 130));
+  check("the popup carries wells and average lateral", /Wells<\/dt><dd>1</.test(adapter.popup ?? "") && /Avg lateral<\/dt><dd>18,595 ft</.test(adapter.popup ?? ""));
+  check("the drawer keeps the raw values behind the formatted ones", /747\.51/.test(screen.getByTestId("feature-panel").textContent ?? "") && /2024-03-13/.test(screen.getByTestId("feature-panel").textContent ?? ""));
+  fireEvent.click(screen.getByTestId("clear-selection"));
+  fireEvent.click(screen.getByTestId("layer-toggle-opt.unit_dc"));
+  await waitFor(() => { if (adapter.layers.get("opt.unit_dc") != null) throw new Error("dc still on"); });
+  check("toggling Unit D&C off removes the layer and its labels", adapter.labels.get("opt.unit_dc") == null && store.get("opt.unit_dc").state === "ready");
+
   // Click → popup with concise attributes for every layer under the point, detail panel with tabs.
   act(() => adapter.click([-81.0860, 40.5728]));
   await waitFor(() => screen.getByTestId("feature-panel"));
