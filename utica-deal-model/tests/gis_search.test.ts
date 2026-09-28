@@ -4,7 +4,7 @@
  * a one-character query from returning half the play.
  */
 import * as fs from "node:fs"; import * as path from "node:path";
-import { getLayer, indexCollection, buildUnitIndex, searchUnits, normalizeQuery, operatorOptions, filterUnitsByOperator, operatorOf, MIN_QUERY, DEFAULT_LIMIT, type FeatureCollection } from "../gis/index";
+import { getLayer, indexCollection, buildUnitIndex, searchUnits, normalizeQuery, operatorOptions, filterUnitsByOperators, operatorOf, MIN_QUERY, DEFAULT_LIMIT, type FeatureCollection } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -73,22 +73,34 @@ check("options are ordered by unit count", options.map((o) => o.count).every((c,
 check("the folded operators carry their combined counts", options.find((o) => o.operator === "EOG Resources")?.count === 233 && options.find((o) => o.operator === "Gulfport Appalachia")?.count === 114 && options.find((o) => o.operator === "EQT")?.count === 4, options.find((o) => o.operator === "EOG Resources")?.count + "/" + options.find((o) => o.operator === "Gulfport Appalachia")?.count);
 check("no option is a filed variant name", !options.some((o) => ["EOG Ohio", "Eclipse", "OG Resources", "Rice Drilling D", "Gulfport Energy", "INR Onio"].includes(o.operator)), options.map((o) => o.operator).join(" | "));
 
-const eqt = filterUnitsByOperator(def, data, "EQT");
+const eqt = filterUnitsByOperators(def, data, ["EQT"]);
 check("filtering narrows the layer to that operator", eqt.featureCount === 4 && eqt.collection.features.length === 4, String(eqt.featureCount));
 check("the filtered layer is re-indexed, so byId holds only the subset", eqt.byId.size === 4 && [...eqt.byId.values()].every((f) => operatorOf(f.properties?.OPERATOR) === "EQT"));
-check("the filtered bbox frames only that operator's acreage", eqt.bbox[0] > data.bbox[0] || eqt.bbox[2] < data.bbox[2] || eqt.bbox[1] > data.bbox[1] || eqt.bbox[3] < data.bbox[3], eqt.bbox.map((v) => v.toFixed(3)).join(","));
-check("filtering picks up units filed under a variant spelling", filterUnitsByOperator(def, data, "EOG Resources").featureCount === 233);
-check("a null operator returns the layer untouched, allocating nothing", filterUnitsByOperator(def, data, null) === data);
-check("an operator with no units yields an empty layer rather than throwing", filterUnitsByOperator(def, data, "Nobody Energy").featureCount === 0);
+check("the filtered bbox frames only that operator's acreage", eqt.bbox[0] > data.bbox[0] || eqt.bbox[2] < data.bbox[2] || eqt.bbox[1] > data.bbox[1] || eqt.bbox[3] < data.bbox[3], eqt.bbox.map((v: number) => v.toFixed(3)).join(","));
+check("filtering picks up units filed under a variant spelling", filterUnitsByOperators(def, data, ["EOG Resources"]).featureCount === 233);
+check("an empty selection returns the layer untouched, allocating nothing", filterUnitsByOperators(def, data, []) === data);
+check("an operator with no units yields an empty layer rather than throwing", filterUnitsByOperators(def, data, ["Nobody Energy"]).featureCount === 0);
 check("the source layer is not mutated by filtering", data.collection.features.length === 789 && data.byId.size === 789);
+
+// Several operators at once: the point of the multi-select.
+const two = filterUnitsByOperators(def, data, ["EQT", "Antero"]);
+check("selecting two operators unions their units", two.featureCount === 11, `${two.featureCount} units`);
+check("a two-operator subset holds only those two", [...two.byId.values()].every((f) => ["EQT", "Antero"].includes(operatorOf(f.properties?.OPERATOR))));
+check("its bbox spans both, so it is no smaller than either alone", (() => { const a = filterUnitsByOperators(def, data, ["Antero"]); return two.bbox[0] <= Math.min(eqt.bbox[0], a.bbox[0]) && two.bbox[2] >= Math.max(eqt.bbox[2], a.bbox[2]); })());
+check("selection order does not change the result", filterUnitsByOperators(def, data, ["Antero", "EQT"]).featureCount === two.featureCount);
+check("a duplicated operator is not double counted", filterUnitsByOperators(def, data, ["EQT", "EQT"]).featureCount === 4);
+check("selecting every operator yields every unit", filterUnitsByOperators(def, data, options.map((o) => o.operator)).featureCount === 789);
 
 // Filter and search compose: a filtered search can only return that operator's units.
 const allNorth = searchUnits(index, "north", 1000);
-const eogNorthFiltered = searchUnits(index, "north", 1000, "EOG Resources");
+const eogNorthFiltered = searchUnits(index, "north", 1000, ["EOG Resources"]);
 check("search narrowed to an operator returns only its units, and some", eogNorthFiltered.length > 0 && eogNorthFiltered.every((h) => h.operator === "EOG Resources"), `${eogNorthFiltered.length} hits`);
 check("the same query unfiltered returns strictly more", allNorth.length > eogNorthFiltered.length, `${allNorth.length} vs ${eogNorthFiltered.length}`);
-check("filtering to an operator with no match for the query returns nothing", searchUnits(index, "north", 1000, "EQT").length === 0);
-check("a unit excluded by the filter is not findable by its own name", searchUnits(index, "Bowerston North", 1000, "EQT").length === 0 && searchUnits(index, "Bowerston North", 1000, "EOG Resources").length > 0);
+check("filtering to an operator with no match for the query returns nothing", searchUnits(index, "north", 1000, ["EQT"]).length === 0);
+check("a unit excluded by the filter is not findable by its own name", searchUnits(index, "Bowerston North", 1000, ["EQT"]).length === 0 && searchUnits(index, "Bowerston North", 1000, ["EOG Resources"]).length > 0);
+const twoOpSearch = searchUnits(index, "north", 1000, ["EOG Resources", "Ascent"]);
+check("search across two operators unions their matches", twoOpSearch.length > eogNorthFiltered.length && twoOpSearch.every((h) => ["EOG Resources", "Ascent"].includes(h.operator)), `${twoOpSearch.length} hits`);
+check("an empty selection leaves search unnarrowed", searchUnits(index, "north", 1000, []).length === allNorth.length);
 
 console.log(failures ? `\n${failures} unit search check(s) FAILED` : "\nUnit search: all checks passed");
 process.exit(failures ? 1 : 0);

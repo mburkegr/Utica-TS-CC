@@ -2,7 +2,7 @@ import React from "react";
 import { Logo } from "../components/Logo";
 import { Banner } from "../components/fields";
 import {
-  LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, labelAnchor, unionBbox, padBbox, layersInDrawOrder, filterUnitsByOperator,
+  LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, labelAnchor, unionBbox, padBbox, layersInDrawOrder, filterUnitsByOperators,
   type LayerDefinition, type LayerData, type LayerStatus, type MapAdapterFactory, type MapView, type ManifestLike, type FetchLike, type Bbox, type Position,
 } from "../../gis/index";
 import manifestJson from "../../gis-data/manifest.json";
@@ -67,8 +67,8 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
   const unitsRaw = store.data(UNITS_LAYER);
   const unitsDef = React.useMemo(() => defs.find((d) => d.id === UNITS_LAYER) ?? null, [defs]);
   const unitsView = React.useMemo(
-    () => (unitsDef && unitsRaw ? filterUnitsByOperator(unitsDef, unitsRaw, state.unitOperator) : unitsRaw),
-    [unitsDef, unitsRaw, state.unitOperator],
+    () => (unitsDef && unitsRaw ? filterUnitsByOperators(unitsDef, unitsRaw, state.unitOperators) : unitsRaw),
+    [unitsDef, unitsRaw, state.unitOperators],
   );
   // Read through a ref, not the closure: `events` is memoized on [adapter, store],
   // so a click handler captured on the first render would otherwise keep filtering
@@ -155,15 +155,16 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
         {moduleNav}
         <UnitSearch
           status={statusOf(UNITS_LAYER)}
-          operator={state.unitOperator}
+          operators={state.unitOperators}
           onNeedLayer={needUnits}
           onPick={pickSearchHit}
         />
         <UnitFilter
           status={statusOf(UNITS_LAYER)}
-          operator={state.unitOperator}
+          operators={state.unitOperators}
           onNeedLayer={needUnits}
-          onChange={(operator) => { dispatch({ type: "SET_UNIT_OPERATOR", operator }); if (operator !== null) dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true }); }}
+          onToggle={(operator) => { dispatch({ type: "TOGGLE_UNIT_OPERATOR", operator }); dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true }); }}
+          onClear={() => dispatch({ type: "SET_UNIT_OPERATORS", operators: [] })}
         />
         <LayerPanel defs={defs} statusOf={statusOf} state={state} dispatch={dispatch} onZoom={zoomToLayer} onRetry={(id) => void store.retry(id).catch(() => undefined)} />
         <div className="rail-foot">EPSG:4326 GeoJSON, vector only. Click the map to identify the township, county and phase window at that point.</div>

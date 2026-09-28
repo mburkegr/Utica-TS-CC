@@ -4,7 +4,7 @@ import { buildUnitIndex, searchUnits, formatValue, MIN_QUERY, type LayerStatus, 
 export interface UnitSearchProps {
   status: LayerStatus;
   /** Active operator filter; search is narrowed to it so a result is never a hidden unit. */
-  operator: string | null;
+  operators: readonly string[];
   /** Load and switch on the units layer; called the first time the box is used. */
   onNeedLayer: () => void;
   onPick: (hit: SearchHit) => void;
@@ -17,12 +17,12 @@ export interface UnitSearchProps {
  * ready the box says so rather than reporting "no matches" for data it has not
  * loaded. The index is rebuilt only when the layer data changes.
  */
-export function UnitSearch({ status, operator, onNeedLayer, onPick }: UnitSearchProps) {
+export function UnitSearch({ status, operators, onNeedLayer, onPick }: UnitSearchProps) {
   const [query, setQuery] = React.useState("");
   const [active, setActive] = React.useState(0);
   const data = status.state === "ready" ? status.data : null;
   const index = React.useMemo(() => (data ? buildUnitIndex(data) : []), [data]);
-  const hits = React.useMemo(() => searchUnits(index, query, undefined, operator), [index, query, operator]);
+  const hits = React.useMemo(() => searchUnits(index, query, undefined, operators), [index, query, operators]);
 
   React.useEffect(() => { setActive(0); }, [query]);
   // Asking for the layer is idempotent, so it is safe to call on every change.
@@ -41,13 +41,13 @@ export function UnitSearch({ status, operator, onNeedLayer, onPick }: UnitSearch
   const note =
     status.state === "loading" ? "Loading units…"
     : status.state === "error" ? "Units unavailable"
-    : searching && status.state === "ready" && hits.length === 0 ? (operator ? `No matching unit for ${operator}` : "No matching unit")
+    : searching && status.state === "ready" && hits.length === 0 ? (operators.length === 1 ? `No matching unit for ${operators[0]}` : operators.length > 1 ? `No matching unit for the ${operators.length} selected operators` : "No matching unit")
     : "";
 
   return (
     <div className="gis-search" data-testid="unit-search">
       <input
-        type="search" className="gis-search-input" value={query} placeholder={operator ? `Find a ${operator} unit` : "Find a unit, operator or order no."}
+        type="search" className="gis-search-input" value={query} placeholder={operators.length === 1 ? `Find a ${operators[0]} unit` : operators.length > 1 ? `Find a unit (${operators.length} operators)` : "Find a unit, operator or order no."}
         aria-label="Find a unit" autoComplete="off" spellCheck={false}
         onChange={(e) => onChange(e.target.value)} onKeyDown={onKeyDown} data-testid="unit-search-input"
       />
