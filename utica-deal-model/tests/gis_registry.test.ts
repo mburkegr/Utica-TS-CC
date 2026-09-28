@@ -1,6 +1,6 @@
 /** Layer registry: consistent definitions, every asset key resolves through the manifest, every style token is defined for light and dark, legend order covers the phase classes. */
 import * as fs from "node:fs"; import * as path from "node:path";
-import { LAYER_REGISTRY, REFERENCE_LAYERS, OPTIONAL_LAYERS, PHASE_ORDER, UNIT_STATUS_ORDER, UNIT_STATUS_LABELS, OPERATOR_ALIASES, getLayer, validateRegistry, styleTokens, layersInDrawOrder, legendFor, phaseOf, regionOf, unitStatusLabel, operatorOf, dcPerFt, lateralFt, hearingDate, resolveSourceUrl } from "../gis/index";
+import { LAYER_REGISTRY, REFERENCE_LAYERS, OPTIONAL_LAYERS, PHASE_ORDER, UNIT_STATUS_ORDER, UNIT_STATUS_LABELS, OPERATOR_ALIASES, getLayer, validateRegistry, styleTokens, layersInDrawOrder, legendFor, phaseOf, regionOf, unitStatusLabel, operatorOf, dcPerFt, lateralFt, hearingDate, dcBand, DC_BANDS, resolveSourceUrl } from "../gis/index";
 import manifest from "../gis-data/manifest.json";
 
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -54,13 +54,20 @@ check("Unit D&C popup leads with D&C then the hearing date", dc.popup.fields.map
 check("hearing dates render without a timezone shifting the day", hearingDate("2026-10-21") === "21 Oct 2026" && hearingDate("2024-01-01") === "1 Jan 2024" && hearingDate("2025-12-31") === "31 Dec 2025");
 check("a malformed or missing hearing date degrades rather than throwing", hearingDate("") === "n/a" && hearingDate(null) === "n/a" && hearingDate("not a date") === "not a date");
 check("lateral length carries its unit", lateralFt(18595) === "18,595 ft" && lateralFt(undefined) === "n/a");
+// The heatmap: six cost bands, cheapest first, with an exclusive upper bound.
+check("the legend lists six cost bands cheapest first", legendFor(dc).map((e) => e.label).join(" | ") === "< $500/ft | $500 - 600/ft | $600 - 700/ft | $700 - 800/ft | $800 - 900/ft | $900+/ft", legendFor(dc).map((e) => e.label).join(" | "));
+check("a cost lands in the band the legend names", dcBand(412) === "u500" && dcBand(550) === "d500" && dcBand(650) === "d600" && dcBand(750) === "d700" && dcBand(850) === "d800" && dcBand(1307.54) === "d900");
+check("band edges are exclusive upper bounds, so 600 is a 600-700 unit", dcBand(499.99) === "u500" && dcBand(500) === "d500" && dcBand(599.99) === "d500" && dcBand(600) === "d600" && dcBand(900) === "d900");
+check("a missing or non-numeric cost falls through to the fallback style", dcBand(undefined) === "unknown" && dcBand(null) === "unknown" && dcBand("700") === "unknown" && dcBand(NaN) === "unknown");
+check("every band has its own fill token and they are all distinct", (() => { const fills = DC_BANDS.map((b) => (dc.style as any).classes[b.key].fill); return new Set(fills).size === 6 && fills.every((f: string) => /^--gis-dc-[a-z0-9]+-fill$/.test(f)); })());
+check("bands share one outline, so the fill alone carries the value", DC_BANDS.every((b) => (dc.style as any).classes[b.key].stroke === "--gis-dc-line"));
 check("the D&C popup derives operator and status the same way the units layer does", dc.popup.fields.find((f) => f.key === "OPERATOR")!.derive!({ OPERATOR: "EOG Ohio" }) === "EOG Resources" && dc.popup.fields.find((f) => f.key === "STATUS")!.derive!({ STATUS: "EFF" }) === "Effective");
 
 // Style tokens defined in ui/gis/gis.css for light, system dark and forced dark.
 const css = fs.readFileSync(path.join(root, "ui/gis/gis.css"), "utf8");
 const blockOf = (re: RegExp) => { const m = re.exec(css); return m ? m[0] : ""; };
 const light = blockOf(/^:root\{[\s\S]*?\}/m), sysDark = blockOf(/@media \(prefers-color-scheme: dark\)\{[\s\S]*?\n\}/), attrDark = blockOf(/:root\[data-theme="dark"\]\{[\s\S]*?\}/);
-const tokens = styleTokens().concat(["--gis-highlight-line", "--gis-highlight-fill", "--gis-label-tc-text", "--gis-label-tc-bg", "--gis-label-tc-ring"]);
+const tokens = styleTokens().concat(["--gis-highlight-line", "--gis-highlight-fill", "--gis-label-tc-text", "--gis-label-tc-bg", "--gis-label-tc-ring", "--gis-label-dc-text", "--gis-label-dc-bg", "--gis-label-dc-ring"]);
 const missing = (b: string) => tokens.filter((t) => !b.includes(`${t}:`));
 check("every registry style token is defined for light", missing(light).length === 0, missing(light).join(","));
 check("every registry style token is defined for system dark", missing(sysDark).length === 0, missing(sysDark).join(","));

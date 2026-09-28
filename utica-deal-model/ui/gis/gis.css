@@ -21,7 +21,13 @@
   --gis-unit-coi-line:#6B4A8F;--gis-unit-coi-fill:#A585C9;
   --gis-unit-nle-line:#6E6E78;--gis-unit-nle-fill:#B0B0B8;
   --gis-unit-other-line:var(--grey-600);--gis-unit-other-fill:var(--grey-400);
-  --gis-dc-line:#0F6E7A;--gis-dc-fill:#4FB3C0;--gis-label-dc:#0B5560;
+  --gis-dc-line:#3A4A52;--gis-label-dc-text:#101820;--gis-label-dc-bg:rgba(255,255,255,.92);--gis-label-dc-ring:rgba(16,24,32,.35);
+  --gis-dc-u500-fill:#075A23;
+  --gis-dc-d500-fill:#1C8A36;
+  --gis-dc-d600-fill:#9ACB1A;
+  --gis-dc-d700-fill:#FFE81F;
+  --gis-dc-d800-fill:#F07B0A;
+  --gis-dc-d900-fill:#C01F14;
   --gis-label-county:var(--slate-700);--gis-label-township:var(--sky-800);--gis-label-halo:rgba(255,255,255,.85);
   --gis-map-bg:var(--sky-200);--gis-map-grid:var(--pale-500);
 }
@@ -43,7 +49,13 @@
     --gis-unit-coi-line:#C4A5E4;--gis-unit-coi-fill:#7A5AA3;
     --gis-unit-nle-line:#9A9AA6;--gis-unit-nle-fill:#55555E;
     --gis-unit-other-line:var(--grey-400);--gis-unit-other-fill:var(--grey-600);
-    --gis-dc-line:#7FDCE8;--gis-dc-fill:#2E7E8A;--gis-label-dc:#A9EAF2;
+    --gis-dc-line:#C9D6DE;--gis-label-dc-text:#F2F7FA;--gis-label-dc-bg:rgba(10,14,20,.86);--gis-label-dc-ring:rgba(242,247,250,.35);
+    --gis-dc-u500-fill:#16702E;
+    --gis-dc-d500-fill:#34A84B;
+    --gis-dc-d600-fill:#9ACB1A;
+    --gis-dc-d700-fill:#FFE81F;
+    --gis-dc-d800-fill:#F79236;
+    --gis-dc-d900-fill:#DE3F2E;
     --gis-label-county:var(--pale-100);--gis-label-township:var(--sky-300);--gis-label-halo:rgba(10,12,14,.85);
     --gis-map-bg:#121A24;--gis-map-grid:#1E2A38;
   }
@@ -65,7 +77,13 @@
   --gis-unit-coi-line:#C4A5E4;--gis-unit-coi-fill:#7A5AA3;
   --gis-unit-nle-line:#9A9AA6;--gis-unit-nle-fill:#55555E;
   --gis-unit-other-line:var(--grey-400);--gis-unit-other-fill:var(--grey-600);
-  --gis-dc-line:#7FDCE8;--gis-dc-fill:#2E7E8A;--gis-label-dc:#A9EAF2;
+  --gis-dc-line:#C9D6DE;--gis-label-dc-text:#F2F7FA;--gis-label-dc-bg:rgba(10,14,20,.86);--gis-label-dc-ring:rgba(242,247,250,.35);
+  --gis-dc-u500-fill:#16702E;
+  --gis-dc-d500-fill:#34A84B;
+  --gis-dc-d600-fill:#9ACB1A;
+  --gis-dc-d700-fill:#FFE81F;
+  --gis-dc-d800-fill:#F79236;
+  --gis-dc-d900-fill:#DE3F2E;
   --gis-label-county:var(--pale-100);--gis-label-township:var(--sky-300);--gis-label-halo:rgba(10,12,14,.85);
   --gis-map-bg:#121A24;--gis-map-grid:#1E2A38;
 }
@@ -140,7 +158,7 @@
 .gis-label span{display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--font-sans);font-weight:700;text-shadow:0 0 3px var(--gis-label-halo),0 0 3px var(--gis-label-halo),0 1px 2px var(--gis-label-halo)}
 .gis-label-county span{color:var(--gis-label-county);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase}
 .gis-label-township span{color:var(--gis-label-township);font-size:10.5px;font-weight:600;letter-spacing:.02em}
-.gis-label-dc span{color:var(--gis-label-dc);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.gis-label-dc span{color:var(--gis-label-dc-text);background:var(--gis-label-dc-bg);font-size:10.5px;font-weight:700;line-height:1;padding:3px 5px;border-radius:9px;box-shadow:0 0 0 1px var(--gis-label-dc-ring);text-shadow:none;font-variant-numeric:tabular-nums}
 .gis-label-tc span{color:var(--gis-label-tc-text);background:var(--gis-label-tc-bg);font-size:12px;font-weight:700;line-height:1;padding:4px 6px;min-width:22px;text-align:center;border-radius:11px;box-shadow:0 0 0 1.5px var(--gis-label-tc-ring),0 4px 10px -4px rgba(0,0,0,.5);text-shadow:none;font-variant-numeric:tabular-nums}
 
 /* Popups */

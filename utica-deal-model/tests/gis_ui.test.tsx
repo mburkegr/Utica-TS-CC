@@ -187,7 +187,8 @@ async function main() {
   await waitFor(() => { if (adapter.layers.get("opt.unit_dc") == null) throw new Error("dc not on map"); }, { timeout: 10000 });
   check("toggling Unit D&C loads only the units that carry a cost", store.get("opt.unit_dc").state === "ready" && adapter.layers.get("opt.unit_dc")?.featureCount === 363);
   check("its labels are on without asking, and there is no label toggle to find", adapter.labels.get("opt.unit_dc") != null && document.querySelector('[data-testid="label-toggle-opt.unit_dc"]') === null);
-  check("the legend reads as the D&C subset", screen.getByTestId("legend-opt.unit_dc").textContent === "Unit with D&C", screen.getByTestId("legend-opt.unit_dc").textContent ?? "");
+  const dcLegend = [...screen.getByTestId("legend-opt.unit_dc").querySelectorAll(".gis-legend-row")].map((r) => r.textContent);
+  check("the legend is the six-band cost ramp, cheapest first", dcLegend.join(" | ") === "< $500/ft | $500 - 600/ft | $600 - 700/ft | $700 - 800/ft | $800 - 900/ft | $900+/ft", dcLegend.join(" | "));
 
   const dcData = (store.get("opt.unit_dc") as { state: "ready"; data: LayerData }).data;
   const akers = dcData.byId.get("AKERS_HN_FRA_EAST")!;

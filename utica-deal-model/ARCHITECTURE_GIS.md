@@ -279,6 +279,42 @@ The geometry is the unit polygon copied verbatim from the units layer, keyed on
 `UNIT_ID`, so the two layers can never disagree about where a unit is;
 `gis_data` asserts the polygons are identical rather than re-derived.
 
+**The heatmap.** Units are filled by cost band (`DC_BANDS`, `dcBand`), cheapest
+first, with an exclusive upper bound so $600/ft is a 600-700 unit:
+
+| Band | Units |
+|---|---:|
+| < $500/ft | 0 |
+| $500 - 600/ft | 37 |
+| $600 - 700/ft | 106 |
+| $700 - 800/ft | 140 |
+| $800 - 900/ft | 42 |
+| $900+/ft | 38 |
+
+The `< $500` band has no units in the current workbook but is registered so a
+refresh that introduces one renders with a style instead of the fallback.
+
+The ramp is deliberately multi-hue — dark green through yellow to red — rather
+than the single-hue light-to-dark a sequential scale would normally use,
+because cheap-to-expensive reads as green-to-red for this audience. That
+choice costs the automatic separation a one-hue ramp gives, so the steps were
+picked against `scripts/validate_palette.js` from the dataviz skill rather
+than by eye: every adjacent pair clears a normal-vision OKLab ΔE of 15 and the
+colour-vision-deficient floor, against each theme's own map surface
+(`#DCE6F0` light, `#121A24` dark). The dark ramp is its own set of steps, not
+a flip of the light one — the darkest green has to lift to stay visible on a
+dark map.
+
+Two consequences worth keeping:
+
+- **Every unit is labeled with its exact cost**, so colour is never the only
+  encoding. That is also what satisfies the relief requirement for the bands
+  whose fill sits under 3:1 against the map.
+- **Bands share one outline token** (`--gis-dc-line`) and differ only in fill.
+  Six competing stroke colours would muddy the value the fill is carrying.
+- The label is a **badge** with its own background, not haloed text: one text
+  colour cannot contrast with six different fills beneath it.
+
 `gis-data/scripts/build_unit_dc.py` does the join and is the reproducible
 record of it. Run it again when either the workbook or the ODNR shapefile is
 refreshed:

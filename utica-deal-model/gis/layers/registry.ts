@@ -144,6 +144,39 @@ export function dcPerFt(value: unknown): string { return typeof value === "numbe
 /** Lateral length with its unit, so the popup row is readable without a column header. */
 export function lateralFt(value: unknown): string { return typeof value === "number" ? `${whole.format(value)} ft` : "n/a"; }
 
+/**
+ * D&C cost bands, cheapest first: the heatmap ramp runs dark green through
+ * yellow to red. `max` is exclusive, so $600/ft falls in the 600-700 band.
+ *
+ * The ramp is deliberately multi-hue rather than one-hue light-to-dark,
+ * because cheap-to-expensive is read as green-to-red here. The values were
+ * stepped so that every adjacent pair clears a normal-vision OKLab ΔE of 15
+ * and the colour-vision-deficient floor, in both themes; each unit also
+ * carries its exact cost as a label, so colour is never the only encoding.
+ */
+export const DC_BANDS = [
+  { key: "u500", label: "< $500/ft", max: 500 },
+  { key: "d500", label: "$500 - 600/ft", max: 600 },
+  { key: "d600", label: "$600 - 700/ft", max: 700 },
+  { key: "d700", label: "$700 - 800/ft", max: 800 },
+  { key: "d800", label: "$800 - 900/ft", max: 900 },
+  { key: "d900", label: "$900+/ft", max: Infinity },
+] as const;
+
+/** Band key for a cost; a non-numeric cost falls to the registry's fallback style. */
+export function dcBand(value: unknown): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "unknown";
+  for (const b of DC_BANDS) if (value < b.max) return b.key;
+  return "d900";
+}
+
+const dcClass = (key: string, label: string): PathStyle & { label: string } => ({
+  // One shared outline for every band: the fill carries the value, and six
+  // competing stroke colours would only muddy it.
+  label, stroke: "--gis-dc-line", weight: 1.2, opacity: 0.9,
+  fill: `--gis-dc-${key}-fill` as StyleToken, fillOpacity: 0.62,
+});
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /**
  * "2026-10-21" → "21 Oct 2026". Parsed from the string rather than through
@@ -227,7 +260,11 @@ export const OPTIONAL_LAYERS: LayerDefinition[] = [
     // Labels on by default: seeing the number without clicking is the point of
     // the layer. Collision avoidance drops the rest, largest unit first.
     label: { field: "DC_PER_FT", derive: (p) => dcPerFt(p.DC_PER_FT), defaultOn: true, className: "gis-label gis-label-dc", avoidCollisions: true, fontPx: 11, paddingPx: 3 },
-    style: { kind: "static", legendLabel: "Unit with D&C", style: { stroke: "--gis-dc-line", weight: 1.8, opacity: 1, fill: "--gis-dc-fill", fillOpacity: 0.16 } },
+    style: {
+      kind: "categorical", field: "DC_PER_FT", classify: (v) => dcBand(v), order: DC_BANDS.map((b) => b.key),
+      classes: Object.fromEntries(DC_BANDS.map((b) => [b.key, dcClass(b.key, b.label)])) as Record<string, PathStyle & { label: string }>,
+      fallback: { label: "No cost", stroke: "--gis-dc-line", weight: 1.2, fill: "--gis-unit-other-fill", fillOpacity: 0.2 },
+    },
   },
 ];
 

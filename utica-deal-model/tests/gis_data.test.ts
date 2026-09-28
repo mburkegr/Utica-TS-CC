@@ -106,6 +106,11 @@ check("each D&C polygon is identical to that unit's polygon, not a re-derived on
 check("the carried name, operator and acreage agree with the units layer", dcFeatures.every((f) => { const u = unitsById.get(String(f.properties!.UNIT_ID))!.properties!; return f.properties!.UNIT_NAME === u.UNIT_NAME && f.properties!.OPERATOR === u.OPERATOR && f.properties!.ACRES === u.ACRES; }));
 const dcVals = dcFeatures.map((f) => f.properties!.DC_PER_FT as number);
 check("every unit carries a positive D&C in a plausible dollars-per-foot range", dcVals.every((v) => typeof v === "number" && v > 100 && v < 5000), `min ${Math.min(...dcVals)} max ${Math.max(...dcVals)}`);
+// Heatmap: no unit may fall through to the fallback style.
+const dcSpec = dcLayer.def.style as Extract<typeof dcLayer.def.style, { kind: "categorical" }>;
+const bands = dcFeatures.map((f) => dcSpec.classify!(f.properties!.DC_PER_FT, f));
+check("every unit classifies into a cost band", bands.every((b) => dcSpec.classes[b]), [...new Set(bands)].join("|"));
+check("the bands actually spread across the ramp rather than bunching in one", new Set(bands).size >= 4, [...new Set(bands)].sort().join("|"));
 check("every unit carries an ISO hearing date", dcFeatures.every((f) => /^\d{4}-\d{2}-\d{2}$/.test(String(f.properties!.HEARING_DATE))));
 check("every unit carries a positive well count and lateral length", dcFeatures.every((f) => (f.properties!.WELLS as number) > 0 && (f.properties!.AVG_LATERAL_FT as number) > 0));
 check("a unit appears once, so a superseded hearing cannot double it", new Set(dcFeatures.map((f) => f.properties!.UNIT_ID)).size === dcFeatures.length);
