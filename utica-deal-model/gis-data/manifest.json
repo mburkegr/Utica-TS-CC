@@ -41,6 +41,14 @@
         "id": "24df5712bee4b0970e67608c7a8f2b7e",
         "url": "/_blob/24df5712bee4b0970e67608c7a8f2b7e"
       }
+    },
+    "unit_dc": {
+      "file": "gis-data/layers/ODNR_Units_DC_EPSG4326.geojson",
+      "sha256": "1e36ccbfd8b55306bfdb85c740798f017b55470f7633809474d1889a06118e91",
+      "asset": {
+        "id": "1b8c729970388a676b21e6176af3bfb9",
+        "url": "/_blob/1b8c729970388a676b21e6176af3bfb9"
+      }
     }
   }
 }

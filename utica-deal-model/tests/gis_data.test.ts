@@ -18,6 +18,7 @@ const EXPECTED: Record<string, { count: number; geometry: string[] }> = {
   "ref.phase_windows": { count: 19, geometry: ["Polygon"] },
   "opt.tc_areas": { count: 30, geometry: ["Polygon"] },
   "opt.odnr_units": { count: 789, geometry: ["Polygon", "MultiPolygon"] },
+  "opt.unit_dc": { count: 363, geometry: ["Polygon"] },
 };
 
 let union: Bbox | null = null;
@@ -49,7 +50,7 @@ for (const def of LAYER_REGISTRY) {
   union = union ? unionBbox(union, data.bbox) : data.bbox;
   loaded.push({ def, data });
 }
-check("registered: counties, townships, phase windows, type curve areas, ODNR units", Object.keys(EXPECTED).every((id) => LAYER_REGISTRY.some((l) => l.id === id)));
+check("registered: counties, townships, phase windows, type curve areas, ODNR units, unit D&C", Object.keys(EXPECTED).every((id) => LAYER_REGISTRY.some((l) => l.id === id)));
 check("map default extent (union bbox) encompasses every reference layer", union !== null && loaded.every((l) => bboxWithin(l.data.bbox, union!)), union?.map((v) => v.toFixed(3)).join(","));
 
 // Phase names all classify into the six legend classes.
@@ -92,6 +93,35 @@ const worstArea = odnr.data.collection.features.reduce((worst, f) => {
   return rel > worst.rel ? { rel, name: String(f.properties!.UNIT_NAME) } : worst;
 }, { rel: 0, name: "" });
 check("unit geometry area agrees with the ACRES attribute (reprojection sanity)", worstArea.rel < 0.02, `worst ${(worstArea.rel * 100).toFixed(2)}% on ${worstArea.name}`);
+
+// Unit D&C: every feature is a real unit polygon carrying a usable cost, and the
+// join is geometric identity, not a re-guess — the polygon must be the one the
+// units layer already has under that id.
+const dcLayer = loaded.find((l) => l.def.id === "opt.unit_dc")!;
+const unitsById = odnr.data.byId;
+const dcFeatures = dcLayer.data.collection.features;
+check("every D&C unit is a unit that exists in the ODNR layer", dcFeatures.every((f) => unitsById.has(String(f.properties!.UNIT_ID))), String(dcFeatures.filter((f) => !unitsById.has(String(f.properties!.UNIT_ID))).length) + " missing");
+check("the D&C layer is a strict subset of the units layer", dcFeatures.length < odnr.data.collection.features.length, `${dcFeatures.length} of ${odnr.data.collection.features.length}`);
+check("each D&C polygon is identical to that unit's polygon, not a re-derived one", dcFeatures.every((f) => JSON.stringify(f.geometry) === JSON.stringify(unitsById.get(String(f.properties!.UNIT_ID))!.geometry)));
+check("the carried name, operator and acreage agree with the units layer", dcFeatures.every((f) => { const u = unitsById.get(String(f.properties!.UNIT_ID))!.properties!; return f.properties!.UNIT_NAME === u.UNIT_NAME && f.properties!.OPERATOR === u.OPERATOR && f.properties!.ACRES === u.ACRES; }));
+const dcVals = dcFeatures.map((f) => f.properties!.DC_PER_FT as number);
+check("every unit carries a positive D&C in a plausible dollars-per-foot range", dcVals.every((v) => typeof v === "number" && v > 100 && v < 5000), `min ${Math.min(...dcVals)} max ${Math.max(...dcVals)}`);
+// Heatmap: no unit may fall through to the fallback style.
+const dcSpec = dcLayer.def.style as Extract<typeof dcLayer.def.style, { kind: "categorical" }>;
+const bands = dcFeatures.map((f) => dcSpec.classify!(f.properties!.DC_PER_FT, f));
+check("every unit classifies into a cost band", bands.every((b) => dcSpec.classes[b]), [...new Set(bands)].join("|"));
+check("the bands actually spread across the ramp rather than bunching in one", new Set(bands).size >= 4, [...new Set(bands)].sort().join("|"));
+check("every unit carries an ISO hearing date", dcFeatures.every((f) => /^\d{4}-\d{2}-\d{2}$/.test(String(f.properties!.HEARING_DATE))));
+check("every unit carries a positive well count and lateral length", dcFeatures.every((f) => (f.properties!.WELLS as number) > 0 && (f.properties!.AVG_LATERAL_FT as number) > 0));
+check("a unit appears once, so a superseded hearing cannot double it", new Set(dcFeatures.map((f) => f.properties!.UNIT_ID)).size === dcFeatures.length);
+const known = dcFeatures.find((f) => f.properties!.UNIT_NAME === "Akers HN FRA East")!;
+check("a spot-checked unit carries the workbook's row", known.properties!.DC_PER_FT === 747.51 && known.properties!.HEARING_DATE === "2024-03-13" && known.properties!.WELLS === 1 && known.properties!.AVG_LATERAL_FT === 18595, JSON.stringify(known.properties));
+// The eight approved aliases are the join's only judgement call; assert one landed.
+check("an alias-joined unit carries the shapefile's spelling, not the workbook's", dcFeatures.some((f) => f.properties!.UNIT_NAME === "Cheetah NHS C") && !dcFeatures.some((f) => f.properties!.UNIT_NAME === "Cheetah NSH C"));
+// Bearcats NB BUF keeps its own three-well hearing: aliasing the later single-well
+// "210H" row onto it would let one well's cost stand in for the unit's.
+const bearcats = dcFeatures.find((f) => f.properties!.UNIT_NAME === "Bearcats NB BUF")!;
+check("Bearcats NB BUF carries its three-well hearing, not the single-well one", bearcats.properties!.WELLS === 3 && bearcats.properties!.DC_PER_FT === 775.91 && bearcats.properties!.HEARING_DATE === "2025-05-07" && bearcats.properties!.AVG_LATERAL_FT === 20492, JSON.stringify(bearcats.properties));
 
 // Hit test at a known location: Carroll County seat (Carrollton) lies in Carroll County, Center Township.
 const hits = hitTest([-81.0860, 40.5728], loaded.filter((l) => l.def.tier === "reference"));

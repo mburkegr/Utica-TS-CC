@@ -40,7 +40,7 @@ Two layers, mirroring the engine/ui split:
 | `gis/search.ts` | Unit lookup: search index + ranked query, and the operator filter |
 | `gis/index.ts` | Public surface; `ui/` imports only from here (enforced by `tests/ui_boundary.test.ts`) |
 | `ui/gis/` | React: `GisModule` (state + reconciliation), `UticaMap`, `LayerPanel`, `UnitSearch`, `UnitFilter`, `FeaturePanel`, `state/` (reducer, persistence), `gis.css` |
-| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units), `manifest.json`, `scripts/manifest.mjs` |
+| `gis-data/` | Data: `base/` reference GeoJSON, `layers/` optional datasets (Type Curve Areas, ODNR Units, Unit D&C), `manifest.json`, `scripts/` |
 
 Data flow: `LayerStore.loadEager()` on first open → store status changes
 re-render `GisModule` → an effect reconciles the `MapAdapter` (`setLayer`,
@@ -115,7 +115,7 @@ and categorical and does not encode quality or risk.
 
 | | Reference | Optional (Layer Library) |
 |---|---|---|
-| Examples | Counties, Townships, Phase windows | Type Curve Areas (shipped), ODNR Units (shipped), Producing wells, Dale wells, Estimated future units, Evaluation areas, Active opportunities, Ownership, Laterals, Operator datasets |
+| Examples | Counties, Townships, Phase windows | Type Curve Areas (shipped), ODNR Units (shipped), Unit D&C (shipped), Producing wells, Dale wells, Estimated future units, Evaluation areas, Active opportunities, Ownership, Laterals, Operator datasets |
 | Loading | Eager on first GIS open, in parallel | Lazy on first toggle |
 | Default | Visible | Off |
 | Cache | Session | Session; `LayerStore.evict` available |
@@ -263,6 +263,95 @@ acreage.
   than being stuck. A preference saved while the filter was single-select
   carries `unitOperator` instead of `unitOperators`, and is migrated on load
   rather than dropped.
+
+### Unit D&C
+
+**Unit D&C** (`opt.unit_dc`, `gis-data/layers/ODNR_Units_DC_EPSG4326.geojson`,
+363 polygons) is the subset of units that carry a drilling-and-completion cost,
+labeled with it. Off by default, lazy, canvas-rendered, `zIndex` and
+`selectionPriority` 60 so it draws and identifies above the plain units layer.
+Unlike every other layer its **labels are on by default**: seeing the number
+without clicking is the point of the layer, and collision avoidance drops the
+rest, largest unit first. Popup: D&C, hearing date, wells, average lateral,
+operator, status.
+
+The geometry is the unit polygon copied verbatim from the units layer, keyed on
+`UNIT_ID`, so the two layers can never disagree about where a unit is;
+`gis_data` asserts the polygons are identical rather than re-derived.
+
+**The heatmap.** Units are filled by cost band (`DC_BANDS`, `dcBand`), cheapest
+first, with an exclusive upper bound so $600/ft is a 600-700 unit:
+
+| Band | Units |
+|---|---:|
+| < $500/ft | 0 |
+| $500 - 600/ft | 37 |
+| $600 - 700/ft | 106 |
+| $700 - 800/ft | 140 |
+| $800 - 900/ft | 42 |
+| $900+/ft | 38 |
+
+The `< $500` band has no units in the current workbook but is registered so a
+refresh that introduces one renders with a style instead of the fallback.
+
+The ramp is deliberately multi-hue — dark green through yellow to red — rather
+than the single-hue light-to-dark a sequential scale would normally use,
+because cheap-to-expensive reads as green-to-red for this audience. That
+choice costs the automatic separation a one-hue ramp gives, so the steps were
+picked against `scripts/validate_palette.js` from the dataviz skill rather
+than by eye: every adjacent pair clears a normal-vision OKLab ΔE of 15 and the
+colour-vision-deficient floor, against each theme's own map surface
+(`#DCE6F0` light, `#121A24` dark). The dark ramp is its own set of steps, not
+a flip of the light one — the darkest green has to lift to stay visible on a
+dark map.
+
+Two consequences worth keeping:
+
+- **Every unit is labeled with its exact cost**, so colour is never the only
+  encoding. That is also what satisfies the relief requirement for the bands
+  whose fill sits under 3:1 against the map.
+- **Bands share one outline token** (`--gis-dc-line`) and differ only in fill.
+  Six competing stroke colours would muddy the value the fill is carrying.
+- The label is a **badge** with its own background, not haloed text: one text
+  colour cannot contrast with six different fills beneath it.
+
+`gis-data/scripts/build_unit_dc.py` does the join and is the reproducible
+record of it. Run it again when either the workbook or the ODNR shapefile is
+refreshed:
+
+```
+python3 gis-data/scripts/build_unit_dc.py <workbook.xlsx> \
+    gis-data/layers/ODNR_Units_EPSG4326.geojson \
+    gis-data/layers/ODNR_Units_DC_EPSG4326.geojson
+node gis-data/scripts/manifest.mjs digest
+```
+
+- **Matching** is on a normalized name: whitespace collapsed, a trailing
+  " Unit" dropped, case folded, punctuation as a separator. That alone joins
+  358 of 402 rows, and the script refuses to run if two shapefile units ever
+  share a normalized key.
+- **`NAME_ALIASES`** adds eight rows where the two files spell one unit
+  differently (`Cheetah NSH C` / `Cheetah NHS C`, `Rogue HWS18 A` /
+  `Rogue HWS 18A`, and so on). Each was confirmed individually. The
+  shapefile's spelling is authoritative, so the output always carries it.
+  Everything else is left unmatched rather than guessed: the remaining 36
+  workbook rows are units that are genuinely not in the shapefile.
+- **Duplicates** keep the latest hearing date, on the basis that a later
+  hearing supersedes an earlier one. An alias can also collapse two
+  differently named rows onto one unit; the script reports those separately,
+  because they are not simple re-hearings and deserve a look. Two do at
+  present, both re-hearings of the same well count.
+
+  This is why `Bearcats NB BUF 210H Unit` is deliberately *not* aliased onto
+  `Bearcats NB BUF`: it is a later single-well hearing, and aliasing it let
+  one well's cost supersede the unit's own three-well row. The unit keeps the
+  three-well hearing and the 210H row is left unmatched. `gis_data` asserts
+  it, so the decision cannot quietly revert.
+- **D&C is dollars per lateral foot** (508 - 1308 across the current file) and
+  `LL` is the average lateral per well, which is why it is fractional when
+  `Wells` > 1. `dcPerFt`, `lateralFt` and `hearingDate` in the registry format
+  them; `hearingDate` parses the ISO string directly rather than through
+  `Date`, which would shift the day across a timezone for a date-only value.
 
 ## 6. Asset, loading and caching strategy
 
