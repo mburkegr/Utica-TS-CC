@@ -7,7 +7,8 @@ import { loadTypeCurveLibrary } from "../engine/typecurve";
 import { runSingleWell } from "../engine/well";
 import { monthToIso } from "../engine/months";
 
-const deck = loadPriceDeck(JSON.parse(fs.readFileSync(new URL("../data/price_file_library.json", import.meta.url), "utf8")));
+// Frozen validation deck, not the live one; see ENGINE_VALIDATION_SUMMARY.md section 9.
+const deck = loadPriceDeck(JSON.parse(fs.readFileSync(new URL("../data/validation_price_deck.json", import.meta.url), "utf8")));
 const lib = loadTypeCurveLibrary(JSON.parse(fs.readFileSync(new URL("../data/type_curve_library.json", import.meta.url), "utf8")));
 
 const reports: CaseReport[] = [];

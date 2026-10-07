@@ -7,7 +7,8 @@ import { prepareDealSettings, prepareGlobalAssumptions, prepareSlotInputs } from
 import { buildIndexPriceSeries, loadPriceDeck } from "../engine/pricing";
 import { monthToIso, parseMonth } from "../engine/months";
 
-const deck = loadPriceDeck(JSON.parse(fs.readFileSync(new URL("../data/price_file_library.json", import.meta.url), "utf8")));
+// Frozen validation deck, not the live one; see ENGINE_VALIDATION_SUMMARY.md section 9.
+const deck = loadPriceDeck(JSON.parse(fs.readFileSync(new URL("../data/validation_price_deck.json", import.meta.url), "utf8")));
 
 const prepReports: CaseReport[] = [];
 const priceReports: CaseReport[] = [];
@@ -76,7 +77,7 @@ const okPrep = printModuleReport("prepare (L00)", prepReports, [
   "flowbackDelay is validated as an integer >= 0 (0 accepted)",
 ]);
 const okPrice = printModuleReport("pricing (L03)", priceReports, [
-  "deck loaded from data/price_file_library.json (exported once from the workbook; same validation rules as the Python loader)",
+  "deck loaded from data/validation_price_deck.json, the frozen deck the Python fixtures were generated from (same validation rules as the Python loader); the live deck the app ships is data/price_file_library.json and is checked separately by price_deck.test",
   "file mode: month >= flat-start uses the terminal price; otherwise deck + (terminal - base) parallel shift; missing months raise",
   "flat mode ignores the 1900-01-01 placeholder switch dates",
 ]);

@@ -116,3 +116,24 @@ L06 onward. They cannot fail the primary parity suite.
 cd ts-engine && npm install && npx tsc && npx tsx tests/run_all.ts
 ```
 `FIXTURE_ROOT` (default `/mnt/user-data/outputs/utica_fixtures`) points the tests at the fixture set.
+
+## 9. Price decks: the validation deck is frozen (added 2026-10-07)
+
+The price deck is an *input* to the engine, not part of it, so refreshing prices must not be able to
+change what reconciliation proves. There are two decks:
+
+| File | Read by | Changes when |
+|---|---|---|
+| `data/validation_price_deck.json` | the reconciliation suite (`tests/adapters.ts`, `reconcile_pricing`, `reconcile_well`) | never, unless the Python golden fixtures are regenerated |
+| `data/price_file_library.json` | the app (`ui/main.tsx`, bundled into `dist/index.html`) | every price refresh |
+
+The validation deck is the deck the Python golden fixtures in `fixtures/utica_fixtures.zip` were
+generated from: the L03 price series in each case is that deck run through the Python reference. Point
+the suite at any other deck and every file-pricing comparison fails for a reason that has nothing to do
+with the engine. `tests/price_deck.test.ts` pins its sha256 and asserts the three reconciliation modules
+still read it, so the split cannot be undone by accident.
+
+Refreshing prices is therefore a data change with no bearing on section 1's result. It touches
+`data/source/price_deck.csv` (the tracked rows), the generated `data/price_file_library.json`, and
+`dist/index.html`. If the Python fixtures are ever regenerated from a newer workbook, replace the
+validation deck and the pinned hash in the same commit.
