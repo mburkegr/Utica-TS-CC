@@ -5,7 +5,10 @@ import type { SlotFrame, SlotLayerConstants, SlotMonth } from "../engine/layers"
 import { loadPriceDeck } from "../engine/pricing";
 import { loadTypeCurveLibrary } from "../engine/typecurve";
 
-export const deck = loadPriceDeck(JSON.parse(fs.readFileSync(new URL("../data/price_file_library.json", import.meta.url), "utf8")));
+// The frozen deck the Python golden fixtures were generated from, not the live
+// deck the app ships. Refreshing prices must not be able to move a
+// reconciliation result; see ENGINE_VALIDATION_SUMMARY.md section 9.
+export const deck = loadPriceDeck(JSON.parse(fs.readFileSync(new URL("../data/validation_price_deck.json", import.meta.url), "utf8")));
 export const lib = loadTypeCurveLibrary(JSON.parse(fs.readFileSync(new URL("../data/type_curve_library.json", import.meta.url), "utf8")));
 
 export function slotRowToPython(r: SlotMonth, k: SlotLayerConstants, extra: Record<string, any> = {}): Record<string, any> {

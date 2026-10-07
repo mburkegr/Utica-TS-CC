@@ -33,6 +33,18 @@ jobs:
       - name: Verify GIS data digests
         run: node gis-data/scripts/manifest.mjs verify
 
+      # The live price deck is generated from the tracked rows beside it, so
+      # rebuilding it has to be a no-op. A diff means the JSON was hand-edited
+      # or the rows changed without a rebuild.
+      - name: Price deck matches its tracked rows
+        run: |
+          python3 data/scripts/build_price_deck.py build data/source/price_deck.csv data/price_file_library.json
+          if ! git diff --quiet -- data/price_file_library.json; then
+            echo "::error::data/price_file_library.json does not match data/source/price_deck.csv. Re-run build_price_deck.py and commit the result."
+            git diff -- data/price_file_library.json | head -40
+            exit 1
+          fi
+
       - name: Build
         run: npm run build
 

@@ -14,8 +14,8 @@ reference geography with a registry-driven Layer Library). See
 | `ui/` | React interface. Imports the engine only through `engine/index`. `ui/shell/` is the master `Deal Model | GIS` navigation; `ui/gis/` the GIS module. |
 | `gis/` | Framework-free GIS library: layer registry, loaders, geometry, map adapter. No engine or React imports. |
 | `gis-data/` | Browser-ready GeoJSON (`base/` reference layers, `layers/` optional datasets), `manifest.json` with published asset ids, maintenance script. |
-| `tests/` | 25 test programs: Python-fixture reconciliation, regressions, UI integration, master shell, GIS data/registry/store/UI. |
-| `data/` | Type-curve library and price deck exported from the source workbooks as JSON. |
+| `tests/` | 26 test programs: Python-fixture reconciliation, regressions, price decks, UI integration, master shell, GIS data/registry/store/UI. |
+| `data/` | Type-curve library and price decks as JSON. `price_file_library.json` is the live deck the app bundles, generated from the tracked rows in `source/price_deck.csv` by `scripts/build_price_deck.py`; `validation_price_deck.json` is the frozen deck the reconciliation suite reads (ENGINE_VALIDATION_SUMMARY.md section 9). |
 | `diagnostics/` | `compare_inputs.ts`: runs a deal in full-life and 360-month parity mode and diffs the monthly cash flows against a Python audit export. |
 | `harness/` | Python harness that generated the golden fixtures from the pinned reference model. |
 | `fixtures/` | `utica_fixtures.zip`: the golden fixture set (14 cases, L00-L12 exports, manifests). |
@@ -32,6 +32,23 @@ npm run build         # writes dist/index.html
 
 `npm test` expects the fixtures unzipped; point it at them with
 `FIXTURE_ROOT=/path/to/utica_fixtures`.
+
+## Refreshing the price deck
+
+A new price strip is a data change, not an engine change. The reconciliation
+suite reads a frozen deck, so new prices cannot move a reconciliation result
+(ENGINE_VALIDATION_SUMMARY.md section 9).
+
+```bash
+python3 data/scripts/build_price_deck.py extract <workbook.xlsx> data/source/price_deck.csv
+python3 data/scripts/build_price_deck.py build data/source/price_deck.csv data/price_file_library.json
+npm test && npm run build      # then commit, including dist/index.html
+```
+
+`extract` needs openpyxl and expects a first sheet with `month`, `oil_price`,
+`gas_price` columns; `build` is stdlib only. The deck is bundled into
+`dist/index.html` rather than fetched, so the artifact shows new prices only
+after a rebuild and a republish.
 
 ## Provenance and validation
 

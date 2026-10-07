@@ -1,5 +1,5 @@
 {
- "source_sha256": "fbd6e98f6b40d3e676e9b8162c45b0b3e5aca7856f72874273a1a19f84f986b3",
+ "source_sha256": "e1346969bbd8f3967e2ce30d67f0db621ab2d8214452939fe1f77e2dbd24a14e",
  "units": {
   "oil_price": "$/bbl WTI index",
   "gas_price": "$/Mcf Henry Hub index"
@@ -7,423 +7,423 @@
  "rows": [
   {
    "month": "2026-01-01",
-   "oil_price": 60.259999999999998,
-   "gas_price": 4.6870000000000003
+   "oil_price": 60.26,
+   "gas_price": 4.687
   },
   {
    "month": "2026-02-01",
-   "oil_price": 64.522999999999996,
+   "oil_price": 64.523,
    "gas_price": 7.46
   },
   {
    "month": "2026-03-01",
    "oil_price": 90.997,
-   "gas_price": 2.9689999999999999
+   "gas_price": 2.969
   },
   {
    "month": "2026-04-01",
-   "oil_price": 98.060000000000002,
-   "gas_price": 3.0950000000000002
+   "oil_price": 98.06,
+   "gas_price": 3.095
   },
   {
    "month": "2026-05-01",
-   "oil_price": 98.513999999999996,
-   "gas_price": 2.8881999999999999
+   "oil_price": 98.514,
+   "gas_price": 2.8882
   },
   {
    "month": "2026-06-01",
-   "oil_price": 81.790000000000006,
-   "gas_price": 3.1429999999999998
+   "oil_price": 81.79,
+   "gas_price": 3.143
   },
   {
    "month": "2026-07-01",
-   "oil_price": 79.219999999999999,
-   "gas_price": 2.9386999999999999
+   "oil_price": 79.22,
+   "gas_price": 2.9387
   },
   {
    "month": "2026-08-01",
-   "oil_price": 82.451999999999998,
-   "gas_price": 2.7410000000000001
+   "oil_price": 82.452,
+   "gas_price": 2.741
   },
   {
    "month": "2026-09-01",
-   "oil_price": 98.097999999999999,
-   "gas_price": 2.8159999999999998
+   "oil_price": 95.687,
+   "gas_price": 2.947
   },
   {
    "month": "2026-10-01",
-   "oil_price": 95.793999999999997,
-   "gas_price": 2.891
+   "oil_price": 89.304,
+   "gas_price": 3.0305
   },
   {
    "month": "2026-11-01",
-   "oil_price": 91.819999999999993,
-   "gas_price": 3.0129999999999999
+   "oil_price": 88.178,
+   "gas_price": 3.114
   },
   {
    "month": "2026-12-01",
-   "oil_price": 87.891999999999996,
-   "gas_price": 3.4140000000000001
+   "oil_price": 87.06,
+   "gas_price": 3.409
   },
   {
    "month": "2027-01-01",
-   "oil_price": 84.778000000000006,
-   "gas_price": 3.7999999999999998
+   "oil_price": 85.844,
+   "gas_price": 3.789
   },
   {
    "month": "2027-02-01",
-   "oil_price": 82.733999999999995,
-   "gas_price": 3.4740000000000002
+   "oil_price": 84.825,
+   "gas_price": 3.45
   },
   {
    "month": "2027-03-01",
-   "oil_price": 80.575000000000003,
-   "gas_price": 2.8439999999999999
+   "oil_price": 83.556,
+   "gas_price": 2.741
   },
   {
    "month": "2027-04-01",
-   "oil_price": 78.734999999999999,
-   "gas_price": 2.734
+   "oil_price": 82.324,
+   "gas_price": 2.648
   },
   {
    "month": "2027-05-01",
-   "oil_price": 77.393000000000001,
-   "gas_price": 2.7639999999999998
+   "oil_price": 81.321,
+   "gas_price": 2.676
   },
   {
    "month": "2027-06-01",
-   "oil_price": 76.176000000000002,
-   "gas_price": 2.923
+   "oil_price": 80.314,
+   "gas_price": 2.83
   },
   {
    "month": "2027-07-01",
-   "oil_price": 75.040000000000006,
-   "gas_price": 3.1419999999999999
+   "oil_price": 79.246,
+   "gas_price": 3.063
   },
   {
    "month": "2027-08-01",
-   "oil_price": 74.230999999999995,
-   "gas_price": 3.2160000000000002
+   "oil_price": 78.393,
+   "gas_price": 3.137
   },
   {
    "month": "2027-09-01",
-   "oil_price": 73.513000000000005,
-   "gas_price": 3.2000000000000002
+   "oil_price": 77.54,
+   "gas_price": 3.118
   },
   {
    "month": "2027-10-01",
-   "oil_price": 72.917000000000002,
-   "gas_price": 3.286
+   "oil_price": 76.77,
+   "gas_price": 3.202
   },
   {
    "month": "2027-11-01",
-   "oil_price": 72.403999999999996,
-   "gas_price": 3.581
+   "oil_price": 76.073,
+   "gas_price": 3.5
   },
   {
    "month": "2027-12-01",
-   "oil_price": 71.869,
-   "gas_price": 4.2060000000000004
+   "oil_price": 75.347,
+   "gas_price": 4.095
   },
   {
    "month": "2028-01-01",
-   "oil_price": 71.427000000000007,
-   "gas_price": 4.6379999999999999
+   "oil_price": 74.744,
+   "gas_price": 4.504
   },
   {
    "month": "2028-02-01",
-   "oil_price": 71.064999999999998,
-   "gas_price": 4.2169999999999996
+   "oil_price": 74.248,
+   "gas_price": 4.111
   },
   {
    "month": "2028-03-01",
-   "oil_price": 70.665000000000006,
-   "gas_price": 3.4769999999999999
+   "oil_price": 73.69,
+   "gas_price": 3.391
   },
   {
    "month": "2028-04-01",
-   "oil_price": 70.352000000000004,
-   "gas_price": 3.2360000000000002
+   "oil_price": 73.248,
+   "gas_price": 3.173
   },
   {
    "month": "2028-05-01",
-   "oil_price": 70.049999999999997,
-   "gas_price": 3.2330000000000001
+   "oil_price": 72.812,
+   "gas_price": 3.17
   },
   {
    "month": "2028-06-01",
-   "oil_price": 69.691999999999993,
-   "gas_price": 3.395
+   "oil_price": 72.299,
+   "gas_price": 3.326
   },
   {
    "month": "2028-07-01",
-   "oil_price": 69.394999999999996,
-   "gas_price": 3.6000000000000001
+   "oil_price": 71.884,
+   "gas_price": 3.541
   },
   {
    "month": "2028-08-01",
-   "oil_price": 69.111999999999995,
-   "gas_price": 3.6619999999999999
+   "oil_price": 71.514,
+   "gas_price": 3.6
   },
   {
    "month": "2028-09-01",
-   "oil_price": 68.819000000000003,
-   "gas_price": 3.633
+   "oil_price": 71.138,
+   "gas_price": 3.569
   },
   {
    "month": "2028-10-01",
-   "oil_price": 68.576999999999998,
-   "gas_price": 3.6800000000000002
+   "oil_price": 70.825,
+   "gas_price": 3.621
   },
   {
    "month": "2028-11-01",
-   "oil_price": 68.326999999999998,
-   "gas_price": 3.8519999999999999
+   "oil_price": 70.48,
+   "gas_price": 3.803
   },
   {
    "month": "2028-12-01",
-   "oil_price": 68.039000000000001,
-   "gas_price": 4.3949999999999996
+   "oil_price": 70.111,
+   "gas_price": 4.341
   },
   {
    "month": "2029-01-01",
-   "oil_price": 67.760000000000005,
-   "gas_price": 4.827
+   "oil_price": 69.753,
+   "gas_price": 4.78
   },
   {
    "month": "2029-02-01",
-   "oil_price": 67.501000000000005,
-   "gas_price": 4.3579999999999997
+   "oil_price": 69.416,
+   "gas_price": 4.341
   },
   {
    "month": "2029-03-01",
-   "oil_price": 67.257000000000005,
-   "gas_price": 3.4500000000000002
+   "oil_price": 69.093,
+   "gas_price": 3.413
   },
   {
    "month": "2029-04-01",
-   "oil_price": 67.040999999999997,
-   "gas_price": 3.1749999999999998
+   "oil_price": 68.809,
+   "gas_price": 3.154
   },
   {
    "month": "2029-05-01",
-   "oil_price": 66.793999999999997,
-   "gas_price": 3.157
+   "oil_price": 68.485,
+   "gas_price": 3.138
   },
   {
    "month": "2029-06-01",
-   "oil_price": 66.492000000000004,
-   "gas_price": 3.286
+   "oil_price": 68.115,
+   "gas_price": 3.262
   },
   {
    "month": "2029-07-01",
-   "oil_price": 66.233000000000004,
-   "gas_price": 3.492
+   "oil_price": 67.797,
+   "gas_price": 3.474
   },
   {
    "month": "2029-08-01",
-   "oil_price": 66,
-   "gas_price": 3.5550000000000002
+   "oil_price": 67.486,
+   "gas_price": 3.529
   },
   {
    "month": "2029-09-01",
-   "oil_price": 65.787000000000006,
-   "gas_price": 3.5369999999999999
+   "oil_price": 67.202,
+   "gas_price": 3.518
   },
   {
    "month": "2029-10-01",
-   "oil_price": 65.588999999999999,
-   "gas_price": 3.5880000000000001
+   "oil_price": 66.919,
+   "gas_price": 3.579
   },
   {
    "month": "2029-11-01",
-   "oil_price": 65.355000000000004,
-   "gas_price": 3.726
+   "oil_price": 66.584,
+   "gas_price": 3.718
   },
   {
    "month": "2029-12-01",
-   "oil_price": 65.102000000000004,
-   "gas_price": 4.2789999999999999
+   "oil_price": 66.286,
+   "gas_price": 4.265
   },
   {
    "month": "2030-01-01",
-   "oil_price": 64.849999999999994,
-   "gas_price": 4.7450000000000001
+   "oil_price": 66.017,
+   "gas_price": 4.732
   },
   {
    "month": "2030-02-01",
-   "oil_price": 64.647000000000006,
-   "gas_price": 4.3410000000000002
+   "oil_price": 65.742,
+   "gas_price": 4.32
   },
   {
    "month": "2030-03-01",
-   "oil_price": 64.447000000000003,
-   "gas_price": 3.4910000000000001
+   "oil_price": 65.463,
+   "gas_price": 3.476
   },
   {
    "month": "2030-04-01",
-   "oil_price": 64.257000000000005,
-   "gas_price": 3.1459999999999999
+   "oil_price": 65.21,
+   "gas_price": 3.145
   },
   {
    "month": "2030-05-01",
-   "oil_price": 64.016999999999996,
-   "gas_price": 3.1030000000000002
+   "oil_price": 64.915,
+   "gas_price": 3.105
   },
   {
    "month": "2030-06-01",
-   "oil_price": 63.771000000000001,
-   "gas_price": 3.2170000000000001
+   "oil_price": 64.618,
+   "gas_price": 3.222
   },
   {
    "month": "2030-07-01",
-   "oil_price": 63.555999999999997,
-   "gas_price": 3.4510000000000001
+   "oil_price": 64.344,
+   "gas_price": 3.462
   },
   {
    "month": "2030-08-01",
-   "oil_price": 63.350999999999999,
-   "gas_price": 3.4900000000000002
+   "oil_price": 64.093,
+   "gas_price": 3.5
   },
   {
    "month": "2030-09-01",
-   "oil_price": 64.698999999999998,
-   "gas_price": 3.4209999999999998
+   "oil_price": 63.862,
+   "gas_price": 3.474
   },
   {
    "month": "2030-10-01",
-   "oil_price": 64.600999999999999,
-   "gas_price": 3.4969999999999999
+   "oil_price": 65.353,
+   "gas_price": 3.466
   },
   {
    "month": "2030-11-01",
-   "oil_price": 64.430000000000007,
-   "gas_price": 3.6549999999999998
+   "oil_price": 65.097,
+   "gas_price": 3.136
   },
   {
    "month": "2030-12-01",
-   "oil_price": 64.233000000000004,
-   "gas_price": 4.2039999999999997
+   "oil_price": 64.791,
+   "gas_price": 3.096
   },
   {
    "month": "2031-01-01",
-   "oil_price": 64.069999999999993,
-   "gas_price": 4.625
+   "oil_price": 64.485,
+   "gas_price": 3.213
   },
   {
    "month": "2031-02-01",
-   "oil_price": 63.954999999999998,
-   "gas_price": 4.2160000000000002
+   "oil_price": 64.2,
+   "gas_price": 3.454
   },
   {
    "month": "2031-03-01",
-   "oil_price": 63.823,
-   "gas_price": 3.4260000000000002
+   "oil_price": 63.939,
+   "gas_price": 3.492
   },
   {
    "month": "2031-04-01",
-   "oil_price": 63.676000000000002,
-   "gas_price": 3.052
+   "oil_price": 63.702,
+   "gas_price": 3.466
   },
   {
    "month": "2031-05-01",
-   "oil_price": 63.536999999999999,
-   "gas_price": 3.0139999999999998
+   "oil_price": 63.537,
+   "gas_price": 3.014
   },
   {
    "month": "2031-06-01",
-   "oil_price": 63.387999999999998,
-   "gas_price": 3.1360000000000001
+   "oil_price": 63.388,
+   "gas_price": 3.136
   },
   {
    "month": "2031-07-01",
-   "oil_price": 63.244999999999997,
-   "gas_price": 3.3559999999999999
+   "oil_price": 63.245,
+   "gas_price": 3.356
   },
   {
    "month": "2031-08-01",
-   "oil_price": 63.109999999999999,
-   "gas_price": 3.4180000000000001
+   "oil_price": 63.11,
+   "gas_price": 3.418
   },
   {
    "month": "2031-09-01",
-   "oil_price": 62.990000000000002,
-   "gas_price": 3.4009999999999998
+   "oil_price": 62.99,
+   "gas_price": 3.401
   },
   {
    "month": "2031-10-01",
-   "oil_price": 62.841000000000001,
-   "gas_price": 3.4860000000000002
+   "oil_price": 62.841,
+   "gas_price": 3.486
   },
   {
    "month": "2031-11-01",
-   "oil_price": 62.697000000000003,
-   "gas_price": 3.7149999999999999
+   "oil_price": 62.697,
+   "gas_price": 3.715
   },
   {
    "month": "2031-12-01",
    "oil_price": 62.512,
-   "gas_price": 4.3179999999999996
+   "gas_price": 4.318
   },
   {
    "month": "2032-01-01",
-   "oil_price": 62.381999999999998,
-   "gas_price": 4.6550000000000002
+   "oil_price": 62.382,
+   "gas_price": 4.655
   },
   {
    "month": "2032-02-01",
-   "oil_price": 62.271000000000001,
-   "gas_price": 4.2469999999999999
+   "oil_price": 62.271,
+   "gas_price": 4.247
   },
   {
    "month": "2032-03-01",
    "oil_price": 62.116,
-   "gas_price": 3.4009999999999998
+   "gas_price": 3.401
   },
   {
    "month": "2032-04-01",
-   "oil_price": 61.948999999999998,
+   "oil_price": 61.949,
    "gas_price": 2.968
   },
   {
    "month": "2032-05-01",
-   "oil_price": 61.808999999999997,
-   "gas_price": 2.9359999999999999
+   "oil_price": 61.809,
+   "gas_price": 2.936
   },
   {
    "month": "2032-06-01",
-   "oil_price": 61.643999999999998,
-   "gas_price": 3.0510000000000002
+   "oil_price": 61.644,
+   "gas_price": 3.051
   },
   {
    "month": "2032-07-01",
-   "oil_price": 61.465000000000003,
-   "gas_price": 3.2320000000000002
+   "oil_price": 61.465,
+   "gas_price": 3.232
   },
   {
    "month": "2032-08-01",
-   "oil_price": 61.328000000000003,
-   "gas_price": 3.2839999999999998
+   "oil_price": 61.328,
+   "gas_price": 3.284
   },
   {
    "month": "2032-09-01",
-   "oil_price": 61.213000000000001,
-   "gas_price": 3.2589999999999999
+   "oil_price": 61.213,
+   "gas_price": 3.259
   },
   {
    "month": "2032-10-01",
-   "oil_price": 61.079999999999998,
-   "gas_price": 3.3239999999999998
+   "oil_price": 61.08,
+   "gas_price": 3.324
   },
   {
    "month": "2032-11-01",
-   "oil_price": 60.954000000000001,
-   "gas_price": 3.5390000000000001
+   "oil_price": 60.954,
+   "gas_price": 3.539
   },
   {
    "month": "2032-12-01",
-   "oil_price": 60.792999999999999,
-   "gas_price": 4.0700000000000003
+   "oil_price": 60.793,
+   "gas_price": 4.07
   }
  ]
 }
