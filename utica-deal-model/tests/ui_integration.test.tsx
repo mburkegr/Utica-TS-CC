@@ -59,10 +59,21 @@ async function main() {
   check("annual table runs through economic life", yHeader[1] === "2026" && Number(yHeader[yHeader.length - 1]) >= 2057, `${yHeader[1]}..${yHeader[yHeader.length - 1]}`);
   check("EUR table shows raw vs residue gas and theoretical vs recovered NGL labels", /Raw Gas EUR\/ft \(Pre-Shrink\)/.test(document.body.textContent ?? "") && /Residue Gas EUR\/ft \(Post-Shrink\)/.test(document.body.textContent ?? "") && /Theoretical NGL/.test(document.body.textContent ?? "") && /Recovered NGL/.test(document.body.textContent ?? ""));
 
+  // Full-cycle returns by slot on Results: one row per slot plus the whole deal
+  const fcText = (attr: string, key: string) => document.querySelector(`[${attr}="${key}"]`)?.textContent ?? "";
+  const fcRows = document.querySelectorAll('[data-testid="full-cycle-table"] tbody tr');
+  check("full-cycle table has one row per slot plus the whole deal", fcRows.length === inputs.slots.length + 1, `${fcRows.length} rows`);
+  check("full-cycle slot 1 IRR matches Python standalone fixture at display precision", fcText("data-full-cycle-irr", "1") === fmtPct(L10.standalone_slot_returns["1"].irr, 1), fcText("data-full-cycle-irr", "1"));
+  check("full-cycle slot 1 shows its acquisition (30 ac x $7,000)", fcText("data-full-cycle-acq", "1") === "($210k)", fcText("data-full-cycle-acq", "1"));
+  check("full-cycle whole-deal row repeats the headline IRR and MOIC", fcText("data-full-cycle-irr", "Whole deal") === irrText && fcText("data-full-cycle-moic", "Whole deal") === moicText, `${fcText("data-full-cycle-irr", "Whole deal")} vs ${irrText}`);
+
+  const fcIrrBySlot = inputs.slots.map((sl) => fcText("data-full-cycle-irr", String(sl.slotId)));
+
   // Standalone slot returns on the Development tab
   fireEvent.click(screen.getByText("Development"));
   const st = document.querySelector('[data-standalone-irr="1"]')!.textContent;
   check("standalone slot 1 IRR equals fixture at display precision", st === fmtPct(L10.standalone_slot_returns["1"].irr, 1), `${st}`);
+  check("Development standalone IRR equals the full-cycle table for every slot", inputs.slots.every((sl, i) => fcIrrBySlot[i] !== "" && document.querySelector(`[data-standalone-irr="${sl.slotId}"]`)!.textContent === fcIrrBySlot[i]), fcIrrBySlot.join(" | "));
 
   // Sensitivity: generate dc_main and compare the rendered base cell with the engine grid and the fixture grid
   fireEvent.click(screen.getByText("Sensitivities"));

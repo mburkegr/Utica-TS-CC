@@ -162,7 +162,7 @@ td.num,th.num{text-align:right}
 th.sticky{background:var(--head-bg);z-index:4}tbody tr:nth-child(even) td.sticky{background:var(--zebra)}tbody tr:hover td.sticky{background:var(--row-hover)}
 .excluded td{opacity:.45}.derived{background:var(--surface-alt)!important}.ro{color:var(--muted)}.actions button{margin-right:2px}
 .period-table td.indent{padding-left:22px}.period-table tr.group td{font-weight:600;color:var(--teal);padding-top:10px;background:var(--card)!important;font-size:12px;letter-spacing:.02em}.period-table tr.bold td{font-weight:600}.period-table tr.italic td{font-style:italic;color:var(--muted)}.period-table td.sticky{min-width:230px}
-.mini td,.mini th{padding:5px 10px}.comp-table td{padding:2px 6px}.cap{text-transform:capitalize}
+.mini td,.mini th{padding:5px 10px}.mini tr.total td{font-weight:600;border-top:1px solid var(--line-strong)}.comp-table td{padding:2px 6px}.cap{text-transform:capitalize}
 
 /* Results band */
 .band{position:relative;overflow:hidden;background:radial-gradient(900px 320px at 12% 0%,var(--band-glow),transparent 60%),linear-gradient(135deg,var(--band-bg) 0%,var(--band-bg-2) 58%,var(--navy-500) 100%);color:var(--band-text);border-radius:14px;padding:26px 28px 22px;margin:6px 0 24px;box-shadow:0 24px 40px -28px rgba(22,37,51,.55)}

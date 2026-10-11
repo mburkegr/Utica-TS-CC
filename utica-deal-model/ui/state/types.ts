@@ -1,4 +1,4 @@
-import type { DealInputs, SlotInput, DealResult, SensitivityGrid, ScenarioPoint } from "../../engine/index";
+import type { DealInputs, SlotInput, DealResult, FullCycleSummary, SensitivityGrid, ScenarioPoint } from "../../engine/index";
 
 export const STATE_SCHEMA_VERSION = "utica-ui-v1";
 
@@ -26,6 +26,8 @@ export interface ResultsState {
   signature: string | null;
   base: DealResult | null;
   standalone: Record<number, { irr: number | null; moic: number | null }> | null;
+  /** Full-cycle totals and returns of each standalone slot run (null where the run failed). */
+  fullCycle: Record<number, FullCycleSummary | null> | null;
   grids: Record<string, GridResult>;
   scenario: ScenarioResult | null;
   error: string | null;

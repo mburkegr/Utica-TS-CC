@@ -3,12 +3,12 @@ import { useApp } from "../state/context";
 import { Section, Row, Select, Banner } from "../components/fields";
 import { PeriodTableView } from "../components/PeriodTableView";
 import { ProductionChart, CumulativeFcfChart } from "../charts/TimeCharts";
-import { buildPeriodTable, calcSlotEur, productionSeries, cumulativeFcfSeries, windowSeries, dealSummary, monthToIso, EUR_LABELS } from "../../engine/index";
-import type { DealResult, DisplayWindow } from "../../engine/index";
+import { buildPeriodTable, calcSlotEur, productionSeries, cumulativeFcfSeries, windowSeries, dealSummary, fullCycleSummary, monthToIso, EUR_LABELS } from "../../engine/index";
+import type { DealResult, DisplayWindow, FullCycleSummary } from "../../engine/index";
 import type { ChartWindowKey } from "../state/types";
 import { fmtNumber, fmtPct, fmtMultiple, fmtMonth, fmtThousands } from "../format/format";
 import { ExportButtons } from "../components/ExportButtons";
-import { periodTableCsv, monthlyDealCsv, safeFileStem } from "../format/csv";
+import { periodTableCsv, monthlyDealCsv, fullCycleCsv, safeFileStem, type FullCycleRow } from "../format/csv";
 
 function windowFor(key: ChartWindowKey, r: DealResult): DisplayWindow {
   const years = key === "5Y" ? 5 : key === "10Y" ? 10 : key === "20Y" ? 20 : null;
@@ -54,6 +54,7 @@ export function Results() {
       {s.promoteEnabled && (s.earliestPromoteEffective !== null
         ? <Banner kind="info">WI reversion becomes effective {fmtMonth(monthToIso(s.earliestPromoteEffective))} (earliest active Dale payout group): {fmtPct(r.settings.promoteWiReversionPct, 2)} of each party's then-current WI transfers after the {r.settings.promoteMultiple.toFixed(2)}x OCF hurdle.</Banner>
         : <Banner kind="info">WI reversion is enabled but no payout group reaches its investment multiple during the modeled life.</Banner>)}
+      <FullCycleReturns r={r} perSlot={state.results.fullCycle} stem={stem} />
       <Section title="Quarterly output, first 8 quarters from model start" note="All returns and tables use the full modeled economic life. Discounted values are not shown because the engine carries no discounting, matching the reference model." right={<ExportButtons filename={`${stem}_Quarterly.csv`} csv={() => periodTableCsv(q)} />}><PeriodTableView table={q} title="$ in thousands" /></Section>
       <Section title="Annual output, full economic life" right={<ExportButtons filename={`${stem}_Annual.csv`} csv={() => periodTableCsv(y)} />}><PeriodTableView table={y} title="$ in thousands" /></Section>
       <Section title="Type-curve outputs per slot" note="Single gross well, risked, through the economic limit. Gas is shown both pre-shrink (raw) and post-shrink (residue); NGL both as theoretical yield and recovered sales volume.">
@@ -74,6 +75,34 @@ export function Results() {
       </Section>
       <MonthlyAudit r={r} stem={stem} />
     </>
+  );
+}
+
+function FullCycleReturns({ r, perSlot, stem }: { r: DealResult; perSlot: Record<number, FullCycleSummary | null> | null; stem: string }) {
+  const whole = React.useMemo(() => fullCycleSummary(r), [r]);
+  const table: FullCycleRow[] = [
+    ...r.slots.map((s) => ({ label: String(s.prepared.slotId), unit: s.prepared.daleUnitId, summary: perSlot?.[s.prepared.slotId] ?? null })),
+    { label: "Whole deal", unit: "", summary: whole },
+  ];
+  const k = (x: number) => fmtThousands(x, 0);
+  return (
+    <Section title="Full-cycle returns by slot"
+      note="Each slot is run as its own deal with the deal's inputs; these are the same returns as Standalone IRR and MOIC on Development. Full cycle counts every cash flow: acquisition (net acres x the $/acre bid, or the deal bid override when it is on, paid in the effective month), D&C including any Dale carry, LOE, taxes, and revenue after any back-in, over the full economic life. Wells in a slot share a type curve, spud month and costs, so a slot's returns are also each of its wells' returns (a Dale first-well carry is booked to the slot as a whole). Where slots share a Dale payout group, each slot run alone tests its own hurdle, so the slot rows need not add up to the whole deal."
+      right={<ExportButtons filename={`${stem}_Full_Cycle_Returns.csv`} csv={() => fullCycleCsv(table)} />}>
+      <div className="table-wrap"><table className="mini" data-testid="full-cycle-table">
+        <thead><tr><th>Slot</th><th>Unit</th><th className="num">Gross wells</th><th className="num">Net wells</th><th className="num">Net acres</th><th className="num">Revenue</th><th className="num">LOE and taxes</th><th className="num">Operating CF</th><th className="num">D&C</th><th className="num">Acquisition</th><th className="num">Net cash flow</th><th className="num">Full-cycle IRR</th><th className="num">Full-cycle MOIC</th><th className="num">Payback</th></tr></thead>
+        <tbody>{table.map(({ label, unit, summary: f }) => (
+          <tr key={label} className={label === "Whole deal" ? "total" : undefined}><td>{label}</td><td>{unit}</td>
+            {f ? <>
+              <td className="num">{fmtNumber(f.grossWells, 1)}</td><td className="num">{fmtNumber(f.netWells, 2)}</td><td className="num">{fmtNumber(f.netAcres, 1)}</td>
+              <td className="num">{k(f.revenue)}</td><td className="num">{k(-f.operatingCosts)}</td><td className="num">{k(f.operatingCashFlow)}</td>
+              <td className="num">{k(-f.dncCapex)}</td><td className="num" data-full-cycle-acq={label}>{k(-f.acquisition)}</td><td className="num">{k(f.netCashFlow)}</td>
+              <td className="num" data-full-cycle-irr={label}>{fmtPct(f.irr, 1)}</td><td className="num" data-full-cycle-moic={label}>{fmtMultiple(f.moic)}</td>
+              <td className="num">{f.paybackYears === null ? "N/A" : `${f.paybackYears.toFixed(1)} yrs`}</td>
+            </> : <td colSpan={12} className="muted">Run failed for this slot</td>}
+          </tr>))}</tbody>
+      </table></div>
+    </Section>
   );
 }
 

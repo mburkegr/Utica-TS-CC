@@ -5,7 +5,7 @@ export { loadTypeCurveLibrary, cleanTcName, getTypeCurve } from "./typecurve";
 export { loadPriceDeck } from "./pricing";
 export { NGL_WTI_CALIBRATION_BASE } from "./ngl";
 export { resolveNglComponents } from "./prepare";
-export { runDeal, runDealMetrics, runStandaloneSlotReturns, type DealResult, type EngineData, type DealRunOptions, type SlotResult } from "./deal";
+export { runDeal, runDealMetrics, runStandaloneSlotReturns, runStandaloneSlots, type DealResult, type EngineData, type DealRunOptions, type SlotResult } from "./deal";
 export type { DealMonth, DealRollup } from "./rollup";
 export type { Payback } from "./returns";
 export type { PromoteScheduleRow } from "./promote";
@@ -17,7 +17,7 @@ export {
   type SensitivityBases, type SensitivitySpec, type SensitivityGrid, type SensitivityToggles, type ScenarioPoint, type SensitivityCase,
 } from "./sensitivities";
 export {
-  buildPeriodTable, calcSlotEur, productionSeries, cumulativeFcfSeries, windowSeries, dealSummary, quarterLabel,
+  buildPeriodTable, calcSlotEur, productionSeries, cumulativeFcfSeries, windowSeries, dealSummary, fullCycleSummary, quarterLabel,
   PERIOD_METRICS, PERIOD_METRIC_LABELS, EUR_LABELS,
-  type PeriodTable, type PeriodMetric, type SlotEur, type DisplayWindow, type DealSummary, type ProductionSeriesPoint, type CumulativeFcfPoint,
+  type PeriodTable, type PeriodMetric, type SlotEur, type DisplayWindow, type DealSummary, type FullCycleSummary, type ProductionSeriesPoint, type CumulativeFcfPoint,
 } from "./reporting";

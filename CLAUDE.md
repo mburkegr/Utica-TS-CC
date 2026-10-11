@@ -60,7 +60,7 @@ build that reverted the artifact's title).
 | `engine/` | the locked calculation engine; public surface is `engine/index.ts` |
 | `ui/` | React; reaches the engine only via `engine/index`, the GIS library only via `gis/index` |
 | `gis/` | framework-free GIS library, no React and no engine imports |
-| `tests/` | 26 test programs, run in order by `tests/run_all.ts` |
+| `tests/` | 27 test programs, run in order by `tests/run_all.ts` |
 
 `tests/ui_boundary.test.ts` enforces those import rules. Adding a GIS layer
 is a registry entry plus data plus CSS tokens; the map has no per-dataset
@@ -94,7 +94,7 @@ fixtures are ever regenerated, replace the deck and the hash together.
 cd utica-deal-model
 npm ci
 npm run typecheck
-FIXTURE_ROOT=/path/to/utica_fixtures npm test     # full suite, 26 modules
+FIXTURE_ROOT=/path/to/utica_fixtures npm test     # full suite, 27 modules
 npm run build                                      # writes dist/index.html
 ```
 

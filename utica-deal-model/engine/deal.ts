@@ -77,3 +77,17 @@ export function runStandaloneSlotReturns(slots: SlotInput[], inputs: DealInputs,
   }
   return out;
 }
+
+/**
+ * Standalone slot runs, kept whole so the UI can report each slot's full-cycle
+ * cash-flow components alongside its returns. Same runs as
+ * runStandaloneSlotReturns (null where a slot's run fails).
+ */
+export function runStandaloneSlots(slots: SlotInput[], inputs: DealInputs, data: EngineData, opts: DealRunOptions = {}): Record<number, DealResult | null> {
+  const out: Record<number, DealResult | null> = {};
+  for (const s of slots) {
+    try { out[s.slotId] = runDeal([s], inputs, data, opts); }
+    catch { out[s.slotId] = null; }
+  }
+  return out;
+}

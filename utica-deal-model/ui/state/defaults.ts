@@ -58,5 +58,5 @@ export function defaultUi(): UiState {
 
 export function initialState(deck: PriceDeck | null): AppState {
   return { schemaVersion: STATE_SCHEMA_VERSION, inputs: defaultInputs(deck), ui: defaultUi(),
-    results: { signature: null, base: null, standalone: null, grids: {}, scenario: null, error: null, validation: [] } };
+    results: { signature: null, base: null, standalone: null, fullCycle: null, grids: {}, scenario: null, error: null, validation: [] } };
 }

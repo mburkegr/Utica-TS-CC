@@ -15,14 +15,14 @@ export type Action =
   | { type: "UPDATE_NGL_PROFILE"; id: string; patch: Partial<Omit<NglProfile, "id">> }
   | { type: "REMOVE_NGL_PROFILE"; id: string }
   | { type: "ASSIGN_NGL_PROFILE"; profileId: string | null; slotIds: number[] | "all" }
-  | { type: "RUN_DONE"; signature: string; base: DealResult; standalone: ResultsState["standalone"] }
+  | { type: "RUN_DONE"; signature: string; base: DealResult; standalone: ResultsState["standalone"]; fullCycle?: ResultsState["fullCycle"] }
   | { type: "RUN_FAILED"; error: string; validation: string[] }
   | { type: "SET_GRID"; key: string; result: GridResult; baseSignature: string }
   | { type: "SET_SCENARIO"; result: ScenarioResult; baseSignature: string }
   | { type: "LOAD_INPUTS"; inputs: ModelInputs; ui?: Partial<UiState> }
   | { type: "RESET_MODEL"; deck: PriceDeck | null };
 
-const emptyResults = (): ResultsState => ({ signature: null, base: null, standalone: null, grids: {}, scenario: null, error: null, validation: [] });
+const emptyResults = (): ResultsState => ({ signature: null, base: null, standalone: null, fullCycle: null, grids: {}, scenario: null, error: null, validation: [] });
 
 function renumber(slots: SlotInput[]): SlotInput[] {
   return slots.map((s, i) => {
@@ -78,7 +78,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, inputs: { ...state.inputs, slots: state.inputs.slots.map((s) => (ids.has(s.slotId) ? { ...s, nglProfileId: action.profileId } : s)) } };
     }
     case "RUN_DONE":
-      return { ...state, results: { ...state.results, signature: action.signature, base: action.base, standalone: action.standalone, error: null, validation: [], grids: {}, scenario: null } };
+      return { ...state, results: { ...state.results, signature: action.signature, base: action.base, standalone: action.standalone, fullCycle: action.fullCycle ?? null, error: null, validation: [], grids: {}, scenario: null } };
     case "RUN_FAILED":
       return { ...state, results: { ...state.results, error: action.error, validation: action.validation } };
     case "SET_GRID":

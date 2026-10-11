@@ -265,3 +265,44 @@ export function dealSummary(result: DealResult): DealSummary {
     promoteEnabled: result.promote.enabled, earliestPromoteEffective: eff.length ? Math.min(...eff) : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Full-cycle summary of one run (all arithmetic stays in the engine)
+// ---------------------------------------------------------------------------
+/**
+ * Full-cycle totals and returns for one run, typically a standalone slot run.
+ * "Full cycle" is every cash flow the run carries: acquisition, all funded D&C
+ * (including any Dale carry), LOE, taxes and revenue after any back-in. The
+ * returns are the run's own IRR, MOIC and payback, unchanged. Totals are full
+ * life and satisfy netCashFlow = operatingCashFlow - dncCapex - acquisition.
+ */
+export interface FullCycleSummary {
+  grossWells: number;
+  /** Net wells at spud, as in DealSummary. */
+  netWells: number;
+  netAcres: number;
+  acquisition: number; // positive $
+  dncCapex: number; // positive $
+  revenue: number;
+  /** LOE plus taxes, positive $. */
+  operatingCosts: number;
+  operatingCashFlow: number;
+  netCashFlow: number;
+  irr: number | null;
+  moic: number | null;
+  paybackYears: number | null;
+}
+
+export function fullCycleSummary(result: DealResult): FullCycleSummary {
+  const s = dealSummary(result);
+  let acq = 0, revenue = 0, costs = 0, ocf = 0, net = 0;
+  for (const r of result.deal.allRows) {
+    acq -= r.slotAssetPurchase; revenue += r.slotTotalRevenue; costs -= r.slotLoe + r.slotTax;
+    ocf += r.slotOperatingProfit; net += r.slotTotalCashFlow;
+  }
+  return {
+    grossWells: s.grossWells, netWells: s.netWells, netAcres: s.totalNetAcres,
+    acquisition: acq, dncCapex: s.totalDncCapex, revenue, operatingCosts: costs, operatingCashFlow: ocf, netCashFlow: net,
+    irr: result.irr, moic: result.moic, paybackYears: result.payback.paybackYears,
+  };
+}
