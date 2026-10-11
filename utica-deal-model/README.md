@@ -14,7 +14,7 @@ reference geography with a registry-driven Layer Library). See
 | `ui/` | React interface. Imports the engine only through `engine/index`. `ui/shell/` is the master `Deal Model | GIS` navigation; `ui/gis/` the GIS module. |
 | `gis/` | Framework-free GIS library: layer registry, loaders, geometry, map adapter. No engine or React imports. |
 | `gis-data/` | Browser-ready GeoJSON (`base/` reference layers, `layers/` optional datasets), `manifest.json` with published asset ids, maintenance script. |
-| `tests/` | 26 test programs: Python-fixture reconciliation, regressions, price decks, UI integration, master shell, GIS data/registry/store/UI. |
+| `tests/` | 27 test programs: Python-fixture reconciliation, regressions, price decks, full-cycle slot returns, UI integration, master shell, GIS data/registry/store/UI. |
 | `data/` | Type-curve library and price decks as JSON. `price_file_library.json` is the live deck the app bundles, generated from the tracked rows in `source/price_deck.csv` by `scripts/build_price_deck.py`; `validation_price_deck.json` is the frozen deck the reconciliation suite reads (ENGINE_VALIDATION_SUMMARY.md section 9). |
 | `diagnostics/` | `compare_inputs.ts`: runs a deal in full-life and 360-month parity mode and diffs the monthly cash flows against a Python audit export. |
 | `harness/` | Python harness that generated the golden fixtures from the pinned reference model. |
