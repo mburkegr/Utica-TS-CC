@@ -113,6 +113,13 @@ const bands = dcFeatures.map((f) => dcSpec.classify!(f.properties!.DC_PER_FT, f)
 check("every unit classifies into a cost band", bands.every((b) => dcSpec.classes[b]), [...new Set(bands)].join("|"));
 check("the bands actually spread across the ramp rather than bunching in one", new Set(bands).size >= 4, [...new Set(bands)].sort().join("|"));
 check("every unit carries an ISO hearing date", dcFeatures.every((f) => /^\d{4}-\d{2}-\d{2}$/.test(String(f.properties!.HEARING_DATE))));
+// Hearing dates sit in the horizontal-Utica era, so a mistyped year cannot slip through: two Miklovic rows
+// were filed as 2004-07-17 (a Saturday) for the 2024-07-17 hearing. Checked on every CSV row, matched or not,
+// with a year of headroom because the workbook carries scheduled hearings.
+const dcCsvDates = fs.readFileSync(path.join(root, "gis-data/source/unit_dc.csv"), "utf8").trim().split("\n").slice(1).map((l) => l.split(",")[0]);
+const maxYear = new Date().getFullYear() + 1;
+const outOfEra = dcCsvDates.filter((d) => Number(d.slice(0, 4)) < 2011 || Number(d.slice(0, 4)) > maxYear);
+check("every D&C hearing date in the CSV falls between 2011 and next year", dcCsvDates.length === 402 && outOfEra.length === 0, `${dcCsvDates.length} rows; out of range: ${outOfEra.join(", ") || "none"}`);
 check("every unit carries a positive well count and lateral length", dcFeatures.every((f) => (f.properties!.WELLS as number) > 0 && (f.properties!.AVG_LATERAL_FT as number) > 0));
 check("a unit appears once, so a superseded hearing cannot double it", new Set(dcFeatures.map((f) => f.properties!.UNIT_ID)).size === dcFeatures.length);
 const known = dcFeatures.find((f) => f.properties!.UNIT_NAME === "Akers HN FRA East")!;

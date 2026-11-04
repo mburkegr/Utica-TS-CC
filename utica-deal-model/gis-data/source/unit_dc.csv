@@ -1,6 +1,4 @@
 hearing_date,unit,wells,avg_lateral_ft,dc_per_ft
-2004-07-17,Miklovic I,3,16892,779.45
-2004-07-17,Miklovic II,1,18835,753.92
 2021-08-04,Borum N SMF JF Unit,1,12028,604.42
 2022-10-19,Timberwolf CBN15 A Unit,4,15489,613.34
 2022-12-07,Bowling North BRN CR Unit,4,12979,818.61
@@ -62,6 +60,8 @@ hearing_date,unit,wells,avg_lateral_ft,dc_per_ft
 2024-06-28,Una NE SHC HR Unit,1,15886,695.71
 2024-07-10,Una E SHC HR,1,15882,695.76
 2024-07-17,McGee Unit,3,16471,825.0
+2024-07-17,Miklovic I,3,16892,779.45
+2024-07-17,Miklovic II,1,18835,753.92
 2024-07-24,Bouska NE FRE HR Unit,2,12914,760.8
 2024-07-24,Jesse Stalder A Unit,1,19795,974.99
 2024-07-24,Jesse Stalder B Unit,1,19810,913.68
