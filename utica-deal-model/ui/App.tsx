@@ -1,6 +1,6 @@
 import React from "react";
-import type { EngineData } from "../engine/index";
-import { runDeal, runStandaloneSlotReturns } from "../engine/index";
+import type { EngineData, FullCycleSummary } from "../engine/index";
+import { runDeal, runStandaloneSlots, fullCycleSummary } from "../engine/index";
 import { AppContext } from "./state/context";
 import { reducer } from "./state/reducer";
 import { initialState } from "./state/defaults";
@@ -67,8 +67,15 @@ export function App({ data, initial, restoreDraft = true, moduleNav, hidden = fa
     setTimeout(() => {
       try {
         const base = runDeal(prep.slots, prep.deal, data);
-        const standalone = runStandaloneSlotReturns(prep.slots, prep.deal, data);
-        dispatch({ type: "RUN_DONE", signature, base, standalone });
+        // One standalone run per slot feeds both the Development columns and the full-cycle table.
+        const runs = runStandaloneSlots(prep.slots, prep.deal, data);
+        const standalone: Record<number, { irr: number | null; moic: number | null }> = {};
+        const fullCycle: Record<number, FullCycleSummary | null> = {};
+        for (const [id, run] of Object.entries(runs)) {
+          standalone[Number(id)] = run ? { irr: run.irr, moic: run.moic } : { irr: null, moic: null };
+          fullCycle[Number(id)] = run ? fullCycleSummary(run) : null;
+        }
+        dispatch({ type: "RUN_DONE", signature, base, standalone, fullCycle });
         dispatch({ type: "SET_UI", patch: { tab: "results" } });
       } catch (e) {
         dispatch({ type: "RUN_FAILED", error: e instanceof Error ? e.message : String(e), validation: [] });

@@ -1,5 +1,5 @@
 /** CSV serialization of engine outputs. Formatting only; values come from the engine unchanged. */
-import type { PeriodTable, DealMonth, SensitivityGrid, ScenarioPoint } from "../../engine/index";
+import type { PeriodTable, DealMonth, SensitivityGrid, ScenarioPoint, FullCycleSummary } from "../../engine/index";
 import { PERIOD_METRIC_LABELS, PERIOD_METRICS, monthToIso } from "../../engine/index";
 import { axisLabel } from "../charts/Heatmap";
 
@@ -43,4 +43,14 @@ export function sensitivityGridCsv(g: SensitivityGrid): string {
 
 export function scenarioCsv(points: ScenarioPoint[]): string {
   return rows([["Pricing Case", "Oil ($/bbl)", "Gas ($/Mcf)", "D&C Case", "D&C ($/ft)", "TC Risk", "$/Acre Bid", "IRR", "MOIC"], ...points.map((p) => [p.pricingCase, p.oilPrice, p.gasPrice, p.dcLabel, p.dcValue, p.tcRisk, p.bid, p.irr, p.moic])]);
+}
+
+export interface FullCycleRow { label: string; unit: string; summary: FullCycleSummary | null }
+
+/** Full-cycle returns table. Costs carry a negative sign so each row reads as a cash-flow walk to net cash flow. */
+export function fullCycleCsv(table: FullCycleRow[]): string {
+  return rows([["Slot", "Unit", "Gross Wells", "Net Wells", "Net Acres", "Revenue", "LOE and Taxes", "Operating Cash Flow", "D&C", "Acquisition", "Net Cash Flow", "Full-Cycle IRR", "Full-Cycle MOIC", "Payback (yrs)"],
+    ...table.map(({ label, unit, summary: f }) => f
+      ? [label, unit, f.grossWells, f.netWells, f.netAcres, f.revenue, -f.operatingCosts, f.operatingCashFlow, -f.dncCapex, -f.acquisition, f.netCashFlow, f.irr, f.moic, f.paybackYears]
+      : [label, unit])]);
 }
