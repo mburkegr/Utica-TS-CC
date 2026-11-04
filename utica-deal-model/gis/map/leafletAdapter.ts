@@ -14,9 +14,11 @@ import { ensureLeaflet, type Leaflet } from "./leafletLoader";
 import { cssTokenResolver, styleForFeature, type TokenResolver } from "./style";
 
 const PANE_BASE = 400;       // Leaflet overlayPane
+const PANE_MARKED = 498;     // analysis selection, just under the click highlight
 const PANE_HIGHLIGHT = 499;
 const PANE_LABELS = 560;     // above overlays, below markerPane (600) and popups (700)
 const HIGHLIGHT_STYLE = { color: "--gis-highlight-line", weight: 3, fill: "--gis-highlight-fill", fillOpacity: 0.18 } as const;
+const MARKED_STYLE = { color: "--gis-marked-line", weight: 2.6, fill: "--gis-marked-fill", fillOpacity: 0.35 } as const;
 
 interface LayerEntry { def: LayerDefinition; data: LayerData; layer: LT.GeoJSON }
 interface LabelItem { id: string; marker: LT.Marker; lonLat: Position; width: number; height: number; priority: number }
@@ -28,6 +30,8 @@ export class LeafletAdapter implements MapAdapter {
   private layers = new Map<string, LayerEntry>();
   private labels = new Map<string, LabelEntry>();
   private highlight: LT.GeoJSON | null = null;
+  private marked: LT.GeoJSON | null = null;
+  private markedKey = "";
   private popup: LT.Popup | null = null;
   private events: MapAdapterEvents | null = null;
   private resolve: TokenResolver = cssTokenResolver();
@@ -41,6 +45,7 @@ export class LeafletAdapter implements MapAdapter {
     const map = L.map(container, { zoomSnap: 0.25, zoomDelta: 0.5, wheelPxPerZoomLevel: 90, attributionControl: false, preferCanvas: false });
     map.setView([opts.view.center[1], opts.view.center[0]], opts.view.zoom);
     L.control.scale({ imperial: true, metric: false, position: "bottomright" }).addTo(map);
+    map.createPane("gis-marked").style.zIndex = String(PANE_MARKED);
     map.createPane("gis-highlight").style.zIndex = String(PANE_HIGHLIGHT);
     map.createPane("gis-labels").style.zIndex = String(PANE_LABELS);
     map.on("click", (e: LT.LeafletMouseEvent) => this.events?.onClick([e.latlng.lng, e.latlng.lat]));
@@ -50,7 +55,7 @@ export class LeafletAdapter implements MapAdapter {
     opts.events.onReady();
   }
 
-  destroy(): void { this.themeCleanup?.(); this.themeCleanup = null; this.map?.remove(); this.map = null; this.layers.clear(); this.labels.clear(); this.highlight = null; this.popup = null; }
+  destroy(): void { this.themeCleanup?.(); this.themeCleanup = null; this.map?.remove(); this.map = null; this.layers.clear(); this.labels.clear(); this.highlight = null; this.marked = null; this.markedKey = ""; this.popup = null; }
   invalidateSize(): void { this.map?.invalidateSize({ animate: false }); }
 
   private paneFor(def: LayerDefinition): string {
@@ -125,6 +130,20 @@ export class LeafletAdapter implements MapAdapter {
     this.highlight = this.L.geoJSON(f as any, { pane: "gis-highlight", interactive: false, style: () => ({ pane: "gis-highlight", interactive: false, color: this.resolve(HIGHLIGHT_STYLE.color), weight: HIGHLIGHT_STYLE.weight, fill: true, fillColor: this.resolve(HIGHLIGHT_STYLE.fill), fillOpacity: HIGHLIGHT_STYLE.fillOpacity }) } as any).addTo(this.map);
   }
 
+  setMarked(features: readonly Feature[]): void {
+    if (!this.map || !this.L) return;
+    // Rebuilt only when the set changes: the reconcile loop calls this on every render.
+    const key = features.map((f) => f.id ?? JSON.stringify(f.properties)).join("|");
+    if (key === this.markedKey && (this.marked !== null) === (features.length > 0)) return;
+    if (this.marked) { this.map.removeLayer(this.marked); this.marked = null; }
+    this.markedKey = key;
+    if (features.length === 0) return;
+    this.marked = this.L.geoJSON({ type: "FeatureCollection", features } as any, { pane: "gis-marked", interactive: false, style: () => this.markedStyle() } as any).addTo(this.map);
+  }
+  private markedStyle() {
+    return { pane: "gis-marked", interactive: false, color: this.resolve(MARKED_STYLE.color), weight: MARKED_STYLE.weight, fill: true, fillColor: this.resolve(MARKED_STYLE.fill), fillOpacity: MARKED_STYLE.fillOpacity };
+  }
+
   fitBbox(b: Bbox, paddingPx = 16): void { this.map?.fitBounds([[b[1], b[0]], [b[3], b[2]]], { padding: [paddingPx, paddingPx], animate: false }); }
   getView(): MapView | null { if (!this.map) return null; const c = this.map.getCenter(); return { center: [c.lng, c.lat], zoom: this.map.getZoom() }; }
 
@@ -139,6 +158,7 @@ export class LeafletAdapter implements MapAdapter {
     if (!this.map) return;
     this.resolve = cssTokenResolver();
     for (const e of this.layers.values()) { const pane = this.paneFor(e.def); e.layer.setStyle((f) => this.pathOptions(e.def, f as Feature, pane)); }
+    this.marked?.setStyle(() => this.markedStyle());
   }
 
   private watchTheme(): void {

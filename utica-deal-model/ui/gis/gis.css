@@ -10,6 +10,8 @@
   --gis-phase-line:#FFFFFF;
   --gis-township-line:var(--sky-700);--gis-township-fill:var(--sky-500);
   --gis-highlight-line:var(--navy-500);--gis-highlight-fill:var(--sky-500);
+  /* Units picked for analysis: magenta, a hue no unit status or D&C band uses. */
+  --gis-marked-line:#B0166E;--gis-marked-fill:#E25AA8;
   --gis-tc-line:var(--navy-600);--gis-tc-fill:var(--navy-300);--gis-label-tc-text:#FFFFFF;--gis-label-tc-bg:var(--navy-600);--gis-label-tc-ring:rgba(255,255,255,.85);
   --gis-unit-eff-line:#1F6F4A;--gis-unit-eff-fill:#4FA97D;
   --gis-unit-pen-line:#9A6A16;--gis-unit-pen-fill:#DDA83C;
@@ -32,6 +34,7 @@
     --gis-phase-line:#FFFFFF;
     --gis-township-line:var(--sky-500);--gis-township-fill:var(--sky-500);
     --gis-highlight-line:var(--pale-100);--gis-highlight-fill:var(--sky-500);
+    --gis-marked-line:#FF8AD0;--gis-marked-fill:#C2187A;
     --gis-tc-line:var(--pale-200);--gis-tc-fill:var(--sky-400);--gis-label-tc-text:var(--navy-900);--gis-label-tc-bg:var(--pale-200);--gis-label-tc-ring:rgba(18,26,36,.85);
     --gis-unit-eff-line:#6FD3A2;--gis-unit-eff-fill:#2E8A62;
     --gis-unit-pen-line:#F0C46A;--gis-unit-pen-fill:#A9791F;
@@ -54,6 +57,7 @@
   --gis-phase-line:#FFFFFF;
   --gis-township-line:var(--sky-500);--gis-township-fill:var(--sky-500);
   --gis-highlight-line:var(--pale-100);--gis-highlight-fill:var(--sky-500);
+  --gis-marked-line:#FF8AD0;--gis-marked-fill:#C2187A;
   --gis-tc-line:var(--pale-200);--gis-tc-fill:var(--sky-400);--gis-label-tc-text:var(--navy-900);--gis-label-tc-bg:var(--pale-200);--gis-label-tc-ring:rgba(18,26,36,.85);
   --gis-unit-eff-line:#6FD3A2;--gis-unit-eff-fill:#2E8A62;
   --gis-unit-pen-line:#F0C46A;--gis-unit-pen-fill:#A9791F;
@@ -76,6 +80,15 @@
 .app[data-module="gis"] .topbar{position:static;flex:none}
 .gis-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .gis-toolbar .btn{padding:6px 11px;font-size:12px}
+/* Select-units switch: a real checkbox (keyboard and screen-reader behaviour for free) drawn as a track and thumb. */
+.gis-switch{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text);user-select:none}
+.gis-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.gis-switch-track{position:relative;width:30px;height:17px;border-radius:999px;background:var(--line-strong);transition:background .12s ease;flex:none}
+.gis-switch-thumb{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .12s ease}
+.gis-switch.on .gis-switch-track{background:var(--gis-marked-line)}
+.gis-switch.on .gis-switch-thumb{transform:translateX(13px)}
+.gis-switch input:focus-visible+.gis-switch-track{outline:2px solid var(--focus);outline-offset:2px}
+.gis-picks{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .gis-stage{flex:1;position:relative;min-height:0;background:var(--gis-map-bg)}
 .gis-map{position:absolute;inset:0;background:var(--gis-map-bg)}
 /* Leaflet adds .leaflet-container to the same element, so the compound selector is needed to beat its own background rule. */

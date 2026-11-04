@@ -3,7 +3,7 @@
  * to this interface; `leafletAdapter` implements it and tests use a fake.
  * Coordinates crossing this boundary are GeoJSON order: [lon, lat].
  */
-import type { Position } from "../layers/geojsonTypes";
+import type { Feature, Position } from "../layers/geojsonTypes";
 import type { LayerData, LayerDefinition, LayerId } from "../layers/types";
 import type { Bbox } from "../geo/geometry";
 
@@ -28,6 +28,8 @@ export interface MapAdapter {
   /** Show or hide feature labels for a layer that has a LabelSpec. Idempotent. */
   setLabels(def: LayerDefinition, data: LayerData | null): void;
   setHighlight(def: LayerDefinition | null, data: LayerData | null, sel: Selection | null): void;
+  /** Outline a set of features picked for analysis (independent of the single click highlight); empty clears. Idempotent. */
+  setMarked(features: readonly Feature[]): void;
   fitBbox(bbox: Bbox, paddingPx?: number): void;
   getView(): MapView | null;
   openPopup(lonLat: Position, html: string): void;

@@ -49,11 +49,13 @@ check("NLE is registered with a style although the current extract has none", Ob
 // Operator: an alias map, not an edit to the source. Aliases are approved explicitly, never inferred.
 check("approved operator aliases canonicalize", operatorOf("Gulfport Energy Transferred to Gulfport Appalachia") === "Gulfport Appalachia" && operatorOf("Gulfport Appalachia") === "Gulfport Appalachia" && operatorOf("Gulfport Energy") === "Gulfport Appalachia" && operatorOf("INR Onio") === "INR Ohio" && operatorOf("INR Ohio") === "INR Ohio");
 check("operator matching ignores case and collapses whitespace", operatorOf("  gulfport   energy  ") === "Gulfport Appalachia" && operatorOf("inr onio") === "INR Ohio");
-check("EOG Ohio, EOG Resources, Eclipse and OG Resources are one operator", ["EOG Ohio", "EOG Resources", "Eclipse", "OG Resources"].every((v) => operatorOf(v) === "EOG Resources"));
+check("EOG Ohio, EOG Resources, Eclipse and OG Resources are one operator, shown as EOG", ["EOG Ohio", "EOG Resources", "Eclipse", "OG Resources"].every((v) => operatorOf(v) === "EOG"));
+check("any EOG or EAP filing, and Encino Acquisition Partners, shows as EOG", ["EOG", "eog  ohio", "EOG Production Co", "EAP", "EAP Ohio", "Encino Acquisition Partners"].every((v) => operatorOf(v) === "EOG"), ["EAP Ohio", "Encino Acquisition Partners"].map(operatorOf).join(" | "));
+check("the EOG/EAP rule needs a whole word: look-alikes pass through as filed", operatorOf("EOGX Energy") === "EOGX Energy" && operatorOf("Geog") === "Geog" && operatorOf("Eapton") === "Eapton");
 check("Rice Drilling D files under EQT", operatorOf("Rice Drilling D") === "EQT");
 check("an unaliased operator passes through as filed", operatorOf("Ascent") === "Ascent" && operatorOf("Hilcorp Energy") === "Hilcorp Energy");
 check("Tiburon is an operator in its own right, not folded into Tiburon Oil and Gas Ohio", operatorOf("Tiburon") === "Tiburon" && operatorOf("Tiburon Oil and Gas Ohio") === "Tiburon Oil and Gas Ohio");
-check("the alias map holds only the approved entries", Object.keys(OPERATOR_ALIASES).length === 10, Object.keys(OPERATOR_ALIASES).join(" | "));
+check("the alias map holds only the approved entries", Object.keys(OPERATOR_ALIASES).sort().join("|") === ["gulfport energy transferred to gulfport appalachia", "gulfport appalachia", "gulfport energy", "inr onio", "inr ohio", "encino acquisition partners", "eclipse", "og resources", "rice drilling d"].sort().join("|"), Object.keys(OPERATOR_ALIASES).join(" | "));
 check("the popup derives the canonical operator and leaves OPERATOR untouched", units.popup.fields.find((f) => f.key === "OPERATOR")!.derive!({ OPERATOR: "Gulfport Energy" }) === "Gulfport Appalachia");
 
 // Unit D&C: the layer exists to show a number on the map, so its label is on by default.
@@ -73,7 +75,7 @@ check("band edges are exclusive upper bounds, so 600 is a 600-700 unit", dcBand(
 check("a missing or non-numeric cost falls through to the fallback style", dcBand(undefined) === "unknown" && dcBand(null) === "unknown" && dcBand("700") === "unknown" && dcBand(NaN) === "unknown");
 check("every band has its own fill token and they are all distinct", (() => { const fills = DC_BANDS.map((b) => (dc.style as any).classes[b.key].fill); return new Set(fills).size === 6 && fills.every((f: string) => /^--gis-dc-[a-z0-9]+-fill$/.test(f)); })());
 check("bands share one outline, so the fill alone carries the value", DC_BANDS.every((b) => (dc.style as any).classes[b.key].stroke === "--gis-dc-line"));
-check("the D&C popup derives operator and status the same way the units layer does", dc.popup.fields.find((f) => f.key === "OPERATOR")!.derive!({ OPERATOR: "EOG Ohio" }) === "EOG Resources" && dc.popup.fields.find((f) => f.key === "STATUS")!.derive!({ STATUS: "EFF" }) === "Effective");
+check("the D&C popup derives operator and status the same way the units layer does", dc.popup.fields.find((f) => f.key === "OPERATOR")!.derive!({ OPERATOR: "EOG Ohio" }) === "EOG" && dc.popup.fields.find((f) => f.key === "STATUS")!.derive!({ STATUS: "EFF" }) === "Effective");
 
 // Style tokens defined in ui/gis/gis.css for light, system dark and forced dark.
 const css = fs.readFileSync(path.join(root, "ui/gis/gis.css"), "utf8");

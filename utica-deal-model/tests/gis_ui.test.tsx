@@ -29,6 +29,8 @@ class FakeAdapter implements MapAdapter {
   setLayer(def: LayerDefinition, data: LayerData | null) { if (this.layers.get(def.id) !== data) this.calls.push(`setLayer:${def.id}:${data ? "on" : "off"}`); this.layers.set(def.id, data); }
   setLabels(def: LayerDefinition, data: LayerData | null) { if (this.labels.get(def.id) !== data) this.calls.push(`setLabels:${def.id}:${data ? "on" : "off"}`); this.labels.set(def.id, data); }
   setHighlight(_d: LayerDefinition | null, _data: LayerData | null, sel: Selection | null) { this.highlight = sel; }
+  marked: string[] = [];
+  setMarked(features: readonly { id?: string | number }[]) { this.marked = features.map((f) => String(f.id)); }
   fitBbox(b: Bbox) { this.fits.push(b); } getView() { return null; }
   openPopup(_p: Position, html: string) { this.popup = html; } closePopup() { this.popup = null; } refreshTheme() {}
   click(p: Position) { this.events.onClick(p); }
@@ -92,8 +94,8 @@ async function main() {
   act(() => adapter.click([-81.1761460636001, 40.43147027485477]));
   await waitFor(() => { if (adapter.highlight?.layerId !== "opt.odnr_units") throw new Error("unit not primary"); });
   check("clicking inside a unit identifies the unit first, with the reference layers as tabs", screen.getByTestId("selection-title").textContent === "Bowerston North" && screen.getByTestId("selection-tab-ref.counties") !== null);
-  check("unit popup carries operator, order, status, formation and acreage", ["Operator", "Order no.", "Status", "Formation", "Acres"].every((l) => new RegExp(`${l.replace(".", "\\.")}</dt>`).test(adapter.popup ?? "")) && /Operator<\/dt><dd>EOG Resources</.test(adapter.popup ?? "") && /Acres<\/dt><dd>866/.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150));
-  check("Bowerston North is filed as EOG Ohio and displays as EOG Resources", (store.get("opt.odnr_units") as { state: "ready"; data: LayerData }).data.byId.get("BOWERSTON_NORTH")!.properties!.OPERATOR === "EOG Ohio");
+  check("unit popup carries operator, order, status, formation and acreage", ["Operator", "Order no.", "Status", "Formation", "Acres"].every((l) => new RegExp(`${l.replace(".", "\\.")}</dt>`).test(adapter.popup ?? "")) && /Operator<\/dt><dd>EOG</.test(adapter.popup ?? "") && /Acres<\/dt><dd>866/.test(adapter.popup ?? ""), adapter.popup?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 150));
+  check("Bowerston North is filed as EOG Ohio and displays as EOG", (store.get("opt.odnr_units") as { state: "ready"; data: LayerData }).data.byId.get("BOWERSTON_NORTH")!.properties!.OPERATOR === "EOG Ohio");
   check("unit popup shows the expanded status, not the raw code", /Status<\/dt><dd>Effective</.test(adapter.popup ?? ""), adapter.popup?.match(/Status<\/dt><dd>[^<]*/)?.[0]);
 
   // A Gulfport unit: the popup and drawer show the canonical operator, the drawer's raw attribute list keeps the filed value.
@@ -117,7 +119,7 @@ async function main() {
   fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "bowerston nor" } });
   await waitFor(() => { if (document.querySelector('[data-testid="unit-search-results"]') === null) throw new Error("no results"); }, { timeout: 10000 });
   const rows = [...screen.getByTestId("unit-search-results").querySelectorAll(".gis-search-result")];
-  check("searching finds the unit and shows operator, order and acreage", /Bowerston North/.test(rows[0].textContent ?? "") && /EOG Resources/.test(rows[0].textContent ?? "") && /2016-237/.test(rows[0].textContent ?? "") && /866 ac/.test(rows[0].textContent ?? ""), rows[0].textContent ?? "");
+  check("searching finds the unit and shows operator, order and acreage", /Bowerston North/.test(rows[0].textContent ?? "") && /Bowerston NorthEOG/.test(rows[0].textContent ?? "") && /2016-237/.test(rows[0].textContent ?? "") && /866 ac/.test(rows[0].textContent ?? ""), rows[0].textContent ?? "");
   const fitsBeforePick = adapter.fits.length;
   fireEvent.click(screen.getByTestId("unit-search-result-BOWERSTON_NORTH"));
   await waitFor(() => { if (adapter.highlight?.featureId !== "BOWERSTON_NORTH") throw new Error("not highlighted"); });
@@ -139,7 +141,7 @@ async function main() {
   fireEvent.click(screen.getByTestId("unit-filter-toggle"));
   await waitFor(() => screen.getByTestId("unit-filter-list"));
   const opts = [...screen.getByTestId("unit-filter-list").querySelectorAll(".gis-filter-option")].map((o) => o.textContent);
-  check("the list shows canonical operators with counts, most units first", opts[0] === "Ascent299" && opts[1] === "EOG Resources233" && opts[2] === "Gulfport Appalachia114", opts.slice(0, 3).join(" | "));
+  check("the list shows canonical operators with counts, most units first", opts[0] === "Ascent299" && opts[1] === "EOG233" && opts[2] === "Gulfport Appalachia114", opts.slice(0, 3).join(" | "));
   check("one option per canonical operator, no filed variants", opts.length === 14 && !opts.some((t) => /^(EOG Ohio|Eclipse|OG Resources|Rice Drilling D|Gulfport Energy|INR Onio)\d/.test(t ?? "")), String(opts.length));
 
   fireEvent.click(screen.getByTestId("unit-filter-option-EQT"));
@@ -225,6 +227,54 @@ async function main() {
   act(() => adapter.click([-84.5, 39.1]));
   await waitFor(() => { if (adapter.popup !== null) throw new Error("popup open"); });
   check("clicking empty map clears selection, popup and highlight", adapter.popup === null && adapter.highlight === null && document.querySelector('[data-testid="feature-panel"]') === null);
+
+  // Select units: the switch turns clicks into picks, picks are outlined on the map, and the Deal Model's Unit Analysis tab shows them.
+  const anchorOf = (id: string) => labelAnchor(store.data("opt.odnr_units")!.byId.get(id)!.geometry)!;
+  fireEvent.click(screen.getByTestId("select-units"));
+  await waitFor(() => { if (store.get("opt.unit_dc").state !== "ready" || store.get("opt.odnr_units").state !== "ready") throw new Error("unit layers loading"); }, { timeout: 5000 });
+  check("turning on Select units shows ODNR Units and loads Unit D&C without drawing it", adapter.layers.get("opt.odnr_units") != null && adapter.layers.get("opt.unit_dc") == null && /Click units to add them/.test(screen.getByTestId("picks-count").textContent ?? ""));
+  act(() => adapter.click(anchorOf("ANGEL_HWS_A")));
+  await waitFor(() => { if (!/1 unit selected/.test(screen.getByTestId("picks-count").textContent ?? "")) throw new Error("no pick"); });
+  check("a click in select mode picks the unit and outlines it, with no popup or drawer", adapter.marked.join() === "ANGEL_HWS_A" && adapter.popup === null && document.querySelector('[data-testid="feature-panel"]') === null, adapter.marked.join());
+  act(() => adapter.click(anchorOf("BOWERSTON_NORTH")));
+  await waitFor(() => { if (!/2 units selected/.test(screen.getByTestId("picks-count").textContent ?? "")) throw new Error("no second pick"); });
+  act(() => adapter.click(anchorOf("ANGEL_HWS_A")));
+  await waitFor(() => { if (!/1 unit selected/.test(screen.getByTestId("picks-count").textContent ?? "")) throw new Error("not removed"); });
+  check("clicking a picked unit again removes it", adapter.marked.join() === "BOWERSTON_NORTH", adapter.marked.join());
+  act(() => adapter.click(anchorOf("ANGEL_HWS_A")));
+  act(() => adapter.click([-84.5, 39.1]));
+  await waitFor(() => { if (!/2 units selected/.test(screen.getByTestId("picks-count").textContent ?? "")) throw new Error("re-add failed"); });
+  check("a click off every unit changes nothing", adapter.marked.join() === "BOWERSTON_NORTH,ANGEL_HWS_A", adapter.marked.join());
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "Bearcats NB BUF" } });
+  fireEvent.click(await waitFor(() => screen.getByTestId("unit-search-result-BEARCATS_NB_BUF")));
+  await waitFor(() => { if (!/3 units selected/.test(screen.getByTestId("picks-count").textContent ?? "")) throw new Error("search did not add"); });
+  check("in select mode a search pick adds the unit without opening the drawer", adapter.marked.join() === "BOWERSTON_NORTH,ANGEL_HWS_A,BEARCATS_NB_BUF" && document.querySelector('[data-testid="feature-panel"]') === null, adapter.marked.join());
+  fireEvent.change(screen.getByTestId("unit-search-input"), { target: { value: "Bearcats NB BUF" } });
+  fireEvent.click(await waitFor(() => screen.getByTestId("unit-search-result-BEARCATS_NB_BUF")));
+  check("searching an already-picked unit does not remove it", adapter.marked.length === 3, adapter.marked.join());
+  act(() => adapter.click(anchorOf("BEARCATS_NB_BUF")));
+  await waitFor(() => { if (!/2 units selected/.test(screen.getByTestId("picks-count").textContent ?? "")) throw new Error("not removed"); });
+
+  fireEvent.click(screen.getByTestId("open-unit-analysis"));
+  await waitFor(() => screen.getByTestId("unit-analysis-table"));
+  const unitRow = (id: string) => document.querySelector(`[data-unit="${id}"]`) as HTMLTableRowElement | null;
+  const cellsOf = (id: string) => [...unitRow(id)!.querySelectorAll("td")].map((c) => c.textContent);
+  check("Open in Deal Model switches module and shows the Unit Analysis tab", document.querySelector('.app[data-module="deal"]:not(.hidden)') !== null && /Unit Analysis/.test(document.querySelector('.app[data-module="deal"] .topbar h1')?.textContent ?? ""));
+  check("the D&C unit row shows operator, hearing year, wells, lateral and $/ft", cellsOf("ANGEL_HWS_A").slice(0, 6).join("|") === "Angel HWS A|EOG|2024|4|14,300|$659", cellsOf("ANGEL_HWS_A").join("|"));
+  check("a unit outside the D&C workbook shows its operator with the D&C fields blank", cellsOf("BOWERSTON_NORTH").slice(1, 6).join("|") === "EOG||||", cellsOf("BOWERSTON_NORTH").join("|"));
+  check("the summary covers only the unit with D&C data", /1 with D&C data/.test(screen.getByTestId("unit-analysis-summary").textContent ?? "") && screen.getByTestId("unit-analysis-dc").textContent === "$659", screen.getByTestId("unit-analysis-summary").textContent ?? "");
+  fireEvent.click(unitRow("ANGEL_HWS_A")!.querySelector("button")!);
+  await waitFor(() => { if (unitRow("ANGEL_HWS_A")) throw new Error("not removed"); });
+  check("removing a unit in the Deal Model also un-outlines it on the map", adapter.marked.join() === "BOWERSTON_NORTH" && unitRow("BOWERSTON_NORTH") !== null, adapter.marked.join());
+  fireEvent.click(screen.getByTestId("unit-analysis-clear"));
+  await waitFor(() => { if (document.querySelector('[data-testid="unit-analysis-table"]')) throw new Error("table still shown"); });
+  check("Clear all empties the tab and the map outline", adapter.marked.length === 0 && /No units selected/.test(document.body.textContent ?? ""));
+  fireEvent.click(screen.getAllByTestId("module-gis")[0]);
+  fireEvent.click(screen.getByTestId("select-units"));
+  act(() => adapter.click([-81.0860, 40.5728]));
+  await waitFor(() => screen.getByTestId("feature-panel"));
+  check("with Select units off, a click identifies features again", adapter.popup !== null && adapter.marked.length === 0);
+  fireEvent.click(screen.getByTestId("clear-selection"));
 
   // Hidden/visible round trip keeps the map alive and relayouts it.
   fireEvent.click(screen.getAllByTestId("module-deal")[0]);

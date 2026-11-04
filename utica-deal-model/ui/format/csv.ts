@@ -2,6 +2,7 @@
 import type { PeriodTable, DealMonth, SensitivityGrid, ScenarioPoint, FullCycleSummary } from "../../engine/index";
 import { PERIOD_METRIC_LABELS, PERIOD_METRICS, monthToIso } from "../../engine/index";
 import { axisLabel } from "../charts/Heatmap";
+import type { UnitAnalysisRow } from "../../gis/index";
 
 const cell = (v: unknown): string => {
   if (v === null || v === undefined) return "";
@@ -53,4 +54,10 @@ export function fullCycleCsv(table: FullCycleRow[]): string {
     ...table.map(({ label, unit, summary: f }) => f
       ? [label, unit, f.grossWells, f.netWells, f.netAcres, f.revenue, -f.operatingCosts, f.operatingCashFlow, -f.dncCapex, -f.acquisition, f.netCashFlow, f.irr, f.moic, f.paybackYears]
       : [label, unit])]);
+}
+
+/** Selected GIS units. Missing values are empty cells, never zero. */
+export function unitAnalysisCsv(units: readonly UnitAnalysisRow[]): string {
+  return rows([["Unit ID", "Unit", "Operator", "Hearing Date", "Hearing Year", "Wells", "Avg Lateral (ft)", "D&C ($/ft)", "Unit Acres"],
+    ...units.map((u) => [u.id, u.name, u.operator, u.hearingDate, u.hearingYear, u.wells, u.avgLateralFt, u.dcPerFt, u.acres])]);
 }

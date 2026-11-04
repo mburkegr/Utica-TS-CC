@@ -16,6 +16,8 @@ export interface GisState {
   unitOperators: string[];
   selection: GisSelection | null;
   detailOpen: boolean;
+  /** While on, a click on a unit adds it to or removes it from the analysis selection instead of identifying it. Not persisted. */
+  selectMode: boolean;
 }
 
 export type GisAction =
@@ -29,12 +31,13 @@ export type GisAction =
   | { type: "SET_PRIMARY"; index: number }
   | { type: "CLEAR_SELECTION" }
   | { type: "SET_DETAIL_OPEN"; open: boolean }
+  | { type: "SET_SELECT_MODE"; on: boolean }
   | { type: "RESET"; defs: readonly LayerDefinition[] };
 
 export function initialGisState(defs: readonly LayerDefinition[]): GisState {
   const visible: Record<string, boolean> = {}, labels: Record<string, boolean> = {};
   for (const d of defs) { visible[d.id] = d.defaultVisible; if (d.label) labels[d.id] = d.label.defaultOn; }
-  return { schemaVersion: GIS_SCHEMA_VERSION, visible, labels, view: null, unitOperators: [], selection: null, detailOpen: false };
+  return { schemaVersion: GIS_SCHEMA_VERSION, visible, labels, view: null, unitOperators: [], selection: null, detailOpen: false, selectMode: false };
 }
 
 export function gisReducer(s: GisState, a: GisAction): GisState {
@@ -53,6 +56,8 @@ export function gisReducer(s: GisState, a: GisAction): GisState {
     case "SET_PRIMARY": return s.selection ? { ...s, selection: { ...s.selection, primary: Math.max(0, Math.min(a.index, s.selection.hits.length - 1)) } } : s;
     case "CLEAR_SELECTION": return { ...s, selection: null };
     case "SET_DETAIL_OPEN": return { ...s, detailOpen: a.open };
+    // Entering select mode drops the identify selection, so its popup and drawer do not sit over the picks.
+    case "SET_SELECT_MODE": return a.on ? { ...s, selectMode: true, selection: null } : { ...s, selectMode: false };
     case "RESET": return initialGisState(a.defs);
   }
 }

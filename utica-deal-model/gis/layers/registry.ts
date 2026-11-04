@@ -96,21 +96,24 @@ export const OPERATOR_ALIASES: Record<string, string> = {
   "gulfport energy": "Gulfport Appalachia",
   "inr onio": "INR Ohio",
   "inr ohio": "INR Ohio",
-  // EOG Ohio and EOG Resources are the same operator; the Eclipse unit is now
-  // EOG's, and "OG Resources" is a dropped leading E.
-  "eog ohio": "EOG Resources",
-  "eog resources": "EOG Resources",
-  "eclipse": "EOG Resources",
-  "og resources": "EOG Resources",
+  // EOG: any filed name starting "EOG" or "EAP" also maps here (see
+  // operatorOf). EAP is Encino Acquisition Partners, which EOG acquired; the
+  // Eclipse unit is now EOG's, and "OG Resources" is a dropped leading E.
+  "encino acquisition partners": "EOG",
+  "eclipse": "EOG",
+  "og resources": "EOG",
   // EQT acquired Rice Energy in 2017.
   "rice drilling d": "EQT",
   // "Tiburon" is deliberately absent: it is an active operator in its own
   // right, not a short spelling of "Tiburon Oil and Gas Ohio".
 };
+/** Approved by the owner: every EOG or EAP filing ("EOG Ohio", "EOG Resources", "EAP Ohio", ...) is EOG. */
+const EOG_PREFIX = /^(eog|eap)\b/;
 /** Canonical operator name for display and grouping; an unaliased name passes through as filed. */
 export function operatorOf(value: unknown): string {
   const raw = String(value ?? "").replace(/\s+/g, " ").trim();
-  return OPERATOR_ALIASES[raw.toLowerCase()] ?? raw;
+  const key = raw.toLowerCase();
+  return OPERATOR_ALIASES[key] ?? (EOG_PREFIX.test(key) ? "EOG" : raw);
 }
 
 // ---------------------------------------------------------------------------

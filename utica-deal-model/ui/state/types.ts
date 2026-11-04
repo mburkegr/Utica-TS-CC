@@ -2,7 +2,7 @@ import type { DealInputs, SlotInput, DealResult, FullCycleSummary, SensitivityGr
 
 export const STATE_SCHEMA_VERSION = "utica-ui-v1";
 
-export type TabKey = "development" | "pricing" | "costs" | "carry" | "results" | "sensitivities";
+export type TabKey = "development" | "pricing" | "costs" | "carry" | "results" | "sensitivities" | "units";
 export type ChartWindowKey = "5Y" | "10Y" | "20Y" | "FULL";
 
 export interface UiState {
