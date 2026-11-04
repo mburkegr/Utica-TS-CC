@@ -76,7 +76,7 @@ check("the tracked file keeps every operator name as filed", ["Gulfport Energy T
 check("canonicalization merges the Gulfport, INR and EOG variants and nothing else", rawOperators.length === 20 && canonical.length === 14, `${rawOperators.length} filed → ${canonical.length} canonical`);
 check("no filed operator is dropped or blanked by canonicalization", canonical.every((c) => c.length > 0) && rawOperators.every((r) => canonical.includes(operatorOf(r))));
 const unitsPer = (name: string) => odnr.data.collection.features.filter((f) => operatorOf(f.properties!.OPERATOR) === name).length;
-check("EOG Resources gathers all four filed spellings", unitsPer("EOG Resources") === 233, `${unitsPer("EOG Resources")} units`);
+check("EOG gathers every EOG filing in the data", unitsPer("EOG") === 233, `${unitsPer("EOG")} units`);
 check("EQT holds the Rice Drilling D units", unitsPer("EQT") === 4, `${unitsPer("EQT")} units`);
 const M_PER_DEG_LAT = 110574, M_PER_DEG_LON_AT = (lat: number) => 111320 * Math.cos((lat * Math.PI) / 180);
 const ringM2 = (ring: number[][], lat0: number) => {

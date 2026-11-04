@@ -191,11 +191,15 @@ lower-cased, so matching tolerates case and spacing:
 |---|---|
 | `Gulfport Energy Transferred to Gulfport Appalachia`, `Gulfport Appalachia`, `Gulfport Energy` | Gulfport Appalachia |
 | `INR Onio`, `INR Ohio` | INR Ohio |
-| `EOG Ohio`, `EOG Resources`, `Eclipse`, `OG Resources` | EOG Resources |
+| any name starting with the word `EOG` or `EAP` (`EOG Ohio`, `EOG Resources`, ...), `Encino Acquisition Partners`, `Eclipse`, `OG Resources` | EOG |
 | `Rice Drilling D` | EQT |
 
-EOG Ohio and EOG Resources are one operator; the Eclipse unit is now EOG's and
-`OG Resources` is a dropped leading E. EQT acquired Rice Energy in 2017.
+EOG is the one prefix rule rather than a list, on the owner's instruction that
+anything EOG or EAP lists as EOG: EAP (Encino Acquisition Partners) is now
+EOG's, so a new EOG or EAP filing folds in without a new alias. The rule needs
+a whole word, so a look-alike such as `EOGX Energy` passes through as filed.
+The Eclipse unit is now EOG's and `OG Resources` is a dropped leading E. EQT
+acquired Rice Energy in 2017.
 
 The canonical name is what display, legends and grouping use; `OPERATOR`
 itself is never rewritten and the drawer's full attribute list shows it as
@@ -395,6 +399,39 @@ shapefile is refreshed, with no further edit.
   them; `hearingDate` parses the ISO string directly rather than through
   `Date`, which would shift the day across a timezone for a date-only value.
 
+### Unit selection for analysis
+
+A **Select units** switch in the GIS toolbar turns map clicks into picks:
+while it is on, a click on a unit adds it to the analysis list or removes it,
+instead of identifying features. Picks are outlined in magenta
+(`--gis-marked-*`, a hue no status or D&C band uses) on their own pane, under
+the click highlight. Turning the switch on shows ODNR Units and loads every
+`units`-category layer, so the D&C fields are there even with Unit D&C hidden.
+In select mode a unit search result adds that unit (never removes it) and
+flies to it, since search is how one unit is found among 789.
+
+The list opens in the Deal Model's **Unit Analysis** tab ("Open in Deal
+Model"): operator, hearing year, wells, average lateral, D&C $/ft and unit
+acres per unit, a summary row, and a CSV. `gis/unitSelection.ts` does the
+work, framework-free:
+
+- **Join.** `unitAnalysisRows` merges a unit's properties across every unit
+  layer by `UNIT_ID`, first non-empty value wins: operator from ODNR Units,
+  hearing date, wells, lateral and $/ft from Unit D&C. A unit the D&C workbook
+  does not cover keeps those fields blank; nothing is borrowed or defaulted.
+  "Year" is the hearing year, by the owner's choice; the filing date is not in
+  the data.
+- **Summary.** Units with D&C data only. Lateral is per well
+  (`sum(wells x lateral) / sum(wells)`) and D&C is total cost over total
+  lateral feet (`sum(wells x lateral x $/ft) / sum(wells x lateral)`), so a
+  four-well unit and a long lateral weigh accordingly.
+
+The shell (`ui/shell/AppShell.tsx`) owns the picked ids, so the tab's Remove
+and Clear all also un-outline units on the map; the GIS builds the rows
+because it holds the layers. Session only: rows need the unit layers, which
+load when the GIS opens, and the GIS persists preferences, never feature data.
+Nothing here touches the engine.
+
 ## 6. Asset, loading and caching strategy
 
 - All GIS data is served from the artifact's **asset store** (`/_blob/<id>`),
@@ -421,7 +458,7 @@ shapefile is refreshed, with no further edit.
 ## 7. Map state
 
 `ui/gis/state/gisReducer.ts`: `visible`, `labels`, `view`, `selection`
-(`{at, hits[], primary}`), `detailOpen`. Persisted per browser under
+(`{at, hits[], primary}`), `detailOpen`, `selectMode` (not persisted). Persisted per browser under
 `localStorage["utica-gis-v1"]` (visibility, labels, view only, never data), and
 restored on top of registry defaults so a newly registered layer gets its
 default. The Deal Model draft key and schema are untouched.
@@ -448,7 +485,8 @@ default. The Deal Model draft key and schema are untouched.
 | `gis_registry.test.ts` | registry validation, manifest keys, draw and selection order, legend order, tokens in every theme block, asset resolution |
 | `gis_data.test.ts` | the four GeoJSON files (see §3), hit test at a known point, TC_NUMBER 1..30, label placement drops collisions |
 | `gis_store.test.ts` | eager vs lazy, in-flight dedupe, cache, error and `not_published`, retry, evict |
-| `gis_ui.test.tsx` | jsdom + fake `MapAdapter` + file-backed fetch: eager load, toggles, township-name toggle is labels-only, optional layer lazy-loads on toggle with labels and is primary on click, click → popup and detail panel, highlight, zoom-to-feature/layer, empty click clears, hidden/visible relayout |
+| `gis_unit_selection.test.ts` | unit join across ODNR Units and Unit D&C, blanks outside the workbook, all 363 D&C units round-trip, footage-weighted summary (hand-computed), toggling |
+| `gis_ui.test.tsx` | jsdom + fake `MapAdapter` + file-backed fetch: eager load, toggles, township-name toggle is labels-only, optional layer lazy-loads on toggle with labels and is primary on click, click → popup and detail panel, highlight, zoom-to-feature/layer, empty click clears, select units → outline → Unit Analysis tab → remove/clear, hidden/visible relayout |
 
 Leaflet itself is not run in jsdom; the `MapAdapter` interface is the seam. The
 Milestone 0 spike (a disposable artifact) verified the real runtime: Leaflet

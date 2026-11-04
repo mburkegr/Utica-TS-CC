@@ -12,4 +12,5 @@ export { createLeafletAdapter, LeafletAdapter, escapeHtml } from "./map/leafletA
 export { ensureLeaflet, LEAFLET_VERSION, LEAFLET_SCRIPT_URLS } from "./map/leafletLoader";
 export { legendFor, styleForFeature, classKey, cssTokenResolver, type LegendEntry, type TokenResolver } from "./map/style";
 export { formatValue, fieldValue, popupSection, popupHtml, type PopupSection } from "./format";
+export { toggleUnitId, unitAnalysisRows, unitAnalysisSummary, type UnitAnalysisRow, type UnitAnalysisSummary } from "./unitSelection";
 export { buildUnitIndex, searchUnits, normalizeQuery, operatorOptions, filterUnitsByOperators, MIN_QUERY, DEFAULT_LIMIT, type SearchEntry, type SearchHit, type OperatorOption } from "./search";

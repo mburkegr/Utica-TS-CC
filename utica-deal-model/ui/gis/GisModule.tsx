@@ -3,6 +3,7 @@ import { Logo } from "../components/Logo";
 import { Banner } from "../components/fields";
 import {
   LAYER_REGISTRY, LayerStore, createLeafletAdapter, hitTest, popupHtml, popupSection, bboxOfGeometry, labelAnchor, unionBbox, padBbox, layersInDrawOrder, filterUnitsByOperators,
+  toggleUnitId, unitAnalysisRows, type UnitAnalysisRow, type Feature,
   type LayerDefinition, type LayerData, type LayerStatus, type MapAdapterFactory, type MapView, type ManifestLike, type FetchLike, type Bbox, type Position,
 } from "../../gis/index";
 import manifestJson from "../../gis-data/manifest.json";
@@ -25,6 +26,17 @@ export interface GisModuleProps {
   store?: LayerStore;
   defs?: readonly LayerDefinition[];
   restorePrefs?: boolean;
+  /**
+   * Units picked for analysis, by unit id. The shell owns the list so the Deal
+   * Model's Unit Analysis tab can show and edit it; without these props the
+   * module keeps its own list (standalone use and tests).
+   */
+  selectedUnits?: readonly string[];
+  onSelectedUnitsChange?: (ids: string[]) => void;
+  /** The picked units joined across the unit layers, re-sent whenever the picks or the loaded layers change. */
+  onUnitRows?: (rows: UnitAnalysisRow[]) => void;
+  /** Shown as "Open in Deal Model" when provided. */
+  onOpenUnitAnalysis?: () => void;
 }
 
 /** Center of the Utica-area reference geography; replaced by a data-driven fit once reference layers load. */
@@ -36,7 +48,7 @@ const unionAll = (bs: Bbox[]): Bbox | null => bs.reduce<Bbox | null>((acc, x) =>
  * GIS module. Framework-free logic (registry, store, hit test, popup HTML)
  * lives in gis/; this component wires it to React state and the MapAdapter.
  */
-export function GisModule({ moduleNav, hidden = false, adapterFactory = createLeafletAdapter, store: storeProp, defs = LAYER_REGISTRY, restorePrefs = true }: GisModuleProps) {
+export function GisModule({ moduleNav, hidden = false, adapterFactory = createLeafletAdapter, store: storeProp, defs = LAYER_REGISTRY, restorePrefs = true, selectedUnits, onSelectedUnitsChange, onUnitRows, onOpenUnitAnalysis }: GisModuleProps) {
   const store = React.useMemo(() => storeProp ?? new LayerStore(defs, manifestJson as ManifestLike, defaultFetch), [storeProp, defs]);
   const adapter = React.useMemo(() => adapterFactory(), [adapterFactory]);
   const [state, dispatch] = React.useReducer(gisReducer, undefined, () => (restorePrefs ? loadGisState(defs) : initialGisState(defs)));
@@ -77,6 +89,32 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
   unitsViewRef.current = unitsView;
   const dataFor = (id: string): LayerData | null => (id === UNITS_LAYER ? unitsViewRef.current : store.data(id));
 
+  /**
+   * Analysis selection. Every layer in the "units" category keys its features
+   * by unit id, so a pick on any of them is the same unit, and the rows join
+   * their attributes (operator from ODNR Units, D&C fields from Unit D&C).
+   * Rows read the unfiltered layers: the operator filter changes what is drawn,
+   * not what was picked.
+   */
+  const [localPicks, setLocalPicks] = React.useState<string[]>([]);
+  const picks = selectedUnits ?? localPicks;
+  const setPicks = onSelectedUnitsChange ?? setLocalPicks;
+  const picksRef = React.useRef({ picks, setPicks }); picksRef.current = { picks, setPicks };
+  const unitDefs = React.useMemo(() => defs.filter((d) => d.category === "units"), [defs]);
+  const unitData = unitDefs.map((d) => store.data(d.id));
+  const unitRows = React.useMemo(() => unitAnalysisRows(picks, unitData), [picks, ...unitData]);
+  const markedFeatures = React.useMemo(() => picks.flatMap((id): Feature[] => { for (const d of unitData) { const f = d?.byId.get(id); if (f) return [f]; } return []; }), [picks, ...unitData]);
+  // Sent only when the rows' content changes. A layer finishing its load rebuilds
+  // the rows, and with nothing picked that is an empty list each time; passing it
+  // up anyway re-rendered the shell for nothing, and that render's stale map
+  // reconcile could close a popup a click had just opened.
+  const sentRows = React.useRef("[]");
+  React.useEffect(() => {
+    const key = JSON.stringify(unitRows);
+    if (key === sentRows.current) return;
+    sentRows.current = key; onUnitRows?.(unitRows);
+  }, [unitRows]);
+
   const readyLayers = (): { def: LayerDefinition; data: LayerData }[] => layersInDrawOrder(defs).flatMap((def) => { const data = dataFor(def.id); return data ? [{ def, data }] : []; });
   const visibleReady = () => readyLayers().filter(({ def }) => stateRef.current.visible[def.id]);
 
@@ -92,6 +130,7 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
     const sel = state.selection; const primary = sel?.hits[sel.primary];
     const pdef = primary ? defs.find((d) => d.id === primary.layerId) ?? null : null;
     adapter.setHighlight(pdef, pdef ? dataFor(pdef.id) : null, primary ?? null);
+    adapter.setMarked(markedFeatures);
     if (!sel) adapter.closePopup();
   });
 
@@ -111,6 +150,13 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
     onViewChange: (view: MapView) => dispatch({ type: "SET_VIEW", view }),
     onClick: (p: Position) => {
       const hits = hitTest(p, visibleReady());
+      if (stateRef.current.selectMode) {
+        // Select mode: the top unit under the cursor toggles in or out; anything else is ignored.
+        const unit = hits.find((h) => h.def.category === "units");
+        if (unit) picksRef.current.setPicks(toggleUnitId(picksRef.current.picks, unit.featureId));
+        adapter.closePopup();
+        return;
+      }
       dispatch({ type: "SELECT", at: p, hits: hits.map((h) => ({ layerId: h.def.id, featureId: h.featureId })) });
       if (hits.length) adapter.openPopup(p, popupHtml(hits.map((h) => popupSection(h.def, h.feature.properties ?? {}))));
       else adapter.closePopup();
@@ -131,12 +177,29 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
     if (!stateRef.current.visible[UNITS_LAYER]) dispatch({ type: "SET_VISIBLE", id: UNITS_LAYER, visible: true });
     const at = labelAnchor(hit.feature.geometry);
     const b = bboxOfGeometry(hit.feature.geometry);
+    if (stateRef.current.selectMode) {
+      // Select mode: searching is how you find one unit among 789, so a pick adds it (never removes) and flies there.
+      const { picks: cur, setPicks: set } = picksRef.current;
+      if (!cur.includes(hit.id)) set([...cur, hit.id]);
+      if (b) adapter.fitBbox(padBbox(b, 0.6), 15);
+      return;
+    }
     if (at) {
       dispatch({ type: "SELECT", at, hits: [{ layerId: UNITS_LAYER, featureId: hit.id }] });
       adapter.openPopup(at, popupHtml([popupSection(def, hit.feature.properties ?? {})]));
     }
     if (b) adapter.fitBbox(padBbox(b, 0.6), 15);
   };
+
+  /** Select mode needs the units on the map to click, and every unit layer loaded so the rows carry D&C even when its layer is hidden. */
+  const setSelectMode = (on: boolean) => {
+    dispatch({ type: "SET_SELECT_MODE", on });
+    if (!on) return;
+    needUnits();
+    for (const d of unitDefs) void store.load(d.id).catch(() => undefined);
+  };
+  // Picks made in an earlier GIS session (the shell keeps them) still need their layers to draw and join.
+  React.useEffect(() => { if (picks.length) for (const d of unitDefs) void store.load(d.id).catch(() => undefined); }, [picks.length > 0]);
 
   const zoomToLayer = (id: string) => { const d = dataFor(id); if (d) adapter.fitBbox(padBbox(d.bbox, 0.02), 12); };
   const zoomToExtent = () => { const b = unionAll(readyLayers().filter((l) => l.def.tier === "reference").map((l) => l.data.bbox)); if (b) adapter.fitBbox(padBbox(b, 0.02), 12); };
@@ -176,6 +239,14 @@ export function GisModule({ moduleNav, hidden = false, adapterFactory = createLe
             <span className="muted" data-testid="gis-status">{loading ? <><span className="spinner" /> Loading reference layers</> : `${readyLayers().length} layers · ${totalFeatures.toLocaleString()} features`}</span>
             <button className="btn secondary" onClick={zoomToExtent} disabled={!ready || loadedCount === 0} data-testid="zoom-extent">Zoom to Utica extent</button>
             {state.selection && <button className="btn secondary" onClick={() => dispatch({ type: "CLEAR_SELECTION" })} data-testid="clear-selection">Clear selection</button>}
+            <label className={`gis-switch${state.selectMode ? " on" : ""}`} title="While on, clicking a unit adds it to or removes it from the analysis list">
+              <input type="checkbox" role="switch" checked={state.selectMode} onChange={(e) => setSelectMode(e.target.checked)} data-testid="select-units" />
+              <span className="gis-switch-track" aria-hidden="true"><span className="gis-switch-thumb" /></span>
+              Select units
+            </label>
+            {(state.selectMode || picks.length > 0) && <span className="gis-picks" data-testid="picks-count">{picks.length === 0 ? "Click units to add them" : `${picks.length} unit${picks.length === 1 ? "" : "s"} selected`}</span>}
+            {picks.length > 0 && onOpenUnitAnalysis && <button className="btn primary" onClick={onOpenUnitAnalysis} data-testid="open-unit-analysis">Open in Deal Model</button>}
+            {picks.length > 0 && <button className="btn secondary" onClick={() => setPicks([])} data-testid="clear-picks">Clear units</button>}
           </div>
         </header>
         <div className="gis-stage">

@@ -40,7 +40,7 @@ const gulfportFiled = searchUnits(index, "gulfport energy", 1000);
 check("canonical operator name finds all its units", gulfportCanonical.length === 114, `${gulfportCanonical.length} hits`);
 check("the operator name as filed also finds units", gulfportFiled.length > 0, `${gulfportFiled.length} hits`);
 check("every Gulfport hit carries the canonical operator", gulfportCanonical.every((h) => h.operator === "Gulfport Appalachia"));
-check("searching EOG finds the folded variants", searchUnits(index, "eog resources", 1000).length === 233, `${searchUnits(index, "eog resources", 1000).length} hits`);
+check("searching EOG finds the folded variants", searchUnits(index, "eog", 1000).length === 233, `${searchUnits(index, "eog", 1000).length} hits`);
 
 // Terms narrow rather than widen.
 const eogOnly = searchUnits(index, "eog", 1000).length;
@@ -57,7 +57,7 @@ check("normalizeQuery folds case and punctuation", normalizeQuery(" Smith-Jones 
 
 // Result rows carry what the list renders, and the feature the map needs.
 const hit = searchUnits(index, "Bowerston North")[0];
-check("a hit carries name, operator, order, status, acres and its feature", hit.name === "Bowerston North" && hit.operator === "EOG Resources" && hit.order === "2016-237" && hit.status === "EFF" && hit.acres === 866.2 && hit.feature.geometry !== null, JSON.stringify({ o: hit.operator, ord: hit.order, ac: hit.acres }));
+check("a hit carries name, operator, order, status, acres and its feature", hit.name === "Bowerston North" && hit.operator === "EOG" && hit.order === "2016-237" && hit.status === "EFF" && hit.acres === 866.2 && hit.feature.geometry !== null, JSON.stringify({ o: hit.operator, ord: hit.order, ac: hit.acres }));
 check("a hit's id round-trips to the layer index", indexCollection(def, fc).byId.get(hit.id)?.properties?.UNIT_NAME === "Bowerston North", hit.id);
 check("results are stable for a repeated query", searchUnits(index, "north").map((h) => h.id).join(",") === searchUnits(index, "north").map((h) => h.id).join(","));
 
@@ -70,14 +70,14 @@ const options = operatorOptions(data);
 check("operator options cover every unit exactly once", options.reduce((n, o) => n + o.count, 0) === 789, String(options.reduce((n, o) => n + o.count, 0)));
 check("options are the canonical operators, so the variants appear once each", options.length === 14, `${options.length} operators`);
 check("options are ordered by unit count", options.map((o) => o.count).every((c, i, a) => i === 0 || a[i - 1] >= c), options.slice(0, 3).map((o) => `${o.operator}:${o.count}`).join(" | "));
-check("the folded operators carry their combined counts", options.find((o) => o.operator === "EOG Resources")?.count === 233 && options.find((o) => o.operator === "Gulfport Appalachia")?.count === 114 && options.find((o) => o.operator === "EQT")?.count === 4, options.find((o) => o.operator === "EOG Resources")?.count + "/" + options.find((o) => o.operator === "Gulfport Appalachia")?.count);
+check("the folded operators carry their combined counts", options.find((o) => o.operator === "EOG")?.count === 233 && options.find((o) => o.operator === "Gulfport Appalachia")?.count === 114 && options.find((o) => o.operator === "EQT")?.count === 4, options.find((o) => o.operator === "EOG")?.count + "/" + options.find((o) => o.operator === "Gulfport Appalachia")?.count);
 check("no option is a filed variant name", !options.some((o) => ["EOG Ohio", "Eclipse", "OG Resources", "Rice Drilling D", "Gulfport Energy", "INR Onio"].includes(o.operator)), options.map((o) => o.operator).join(" | "));
 
 const eqt = filterUnitsByOperators(def, data, ["EQT"]);
 check("filtering narrows the layer to that operator", eqt.featureCount === 4 && eqt.collection.features.length === 4, String(eqt.featureCount));
 check("the filtered layer is re-indexed, so byId holds only the subset", eqt.byId.size === 4 && [...eqt.byId.values()].every((f) => operatorOf(f.properties?.OPERATOR) === "EQT"));
 check("the filtered bbox frames only that operator's acreage", eqt.bbox[0] > data.bbox[0] || eqt.bbox[2] < data.bbox[2] || eqt.bbox[1] > data.bbox[1] || eqt.bbox[3] < data.bbox[3], eqt.bbox.map((v: number) => v.toFixed(3)).join(","));
-check("filtering picks up units filed under a variant spelling", filterUnitsByOperators(def, data, ["EOG Resources"]).featureCount === 233);
+check("filtering picks up units filed under a variant spelling", filterUnitsByOperators(def, data, ["EOG"]).featureCount === 233);
 check("an empty selection returns the layer untouched, allocating nothing", filterUnitsByOperators(def, data, []) === data);
 check("an operator with no units yields an empty layer rather than throwing", filterUnitsByOperators(def, data, ["Nobody Energy"]).featureCount === 0);
 check("the source layer is not mutated by filtering", data.collection.features.length === 789 && data.byId.size === 789);
@@ -93,13 +93,13 @@ check("selecting every operator yields every unit", filterUnitsByOperators(def, 
 
 // Filter and search compose: a filtered search can only return that operator's units.
 const allNorth = searchUnits(index, "north", 1000);
-const eogNorthFiltered = searchUnits(index, "north", 1000, ["EOG Resources"]);
-check("search narrowed to an operator returns only its units, and some", eogNorthFiltered.length > 0 && eogNorthFiltered.every((h) => h.operator === "EOG Resources"), `${eogNorthFiltered.length} hits`);
+const eogNorthFiltered = searchUnits(index, "north", 1000, ["EOG"]);
+check("search narrowed to an operator returns only its units, and some", eogNorthFiltered.length > 0 && eogNorthFiltered.every((h) => h.operator === "EOG"), `${eogNorthFiltered.length} hits`);
 check("the same query unfiltered returns strictly more", allNorth.length > eogNorthFiltered.length, `${allNorth.length} vs ${eogNorthFiltered.length}`);
 check("filtering to an operator with no match for the query returns nothing", searchUnits(index, "north", 1000, ["EQT"]).length === 0);
-check("a unit excluded by the filter is not findable by its own name", searchUnits(index, "Bowerston North", 1000, ["EQT"]).length === 0 && searchUnits(index, "Bowerston North", 1000, ["EOG Resources"]).length > 0);
-const twoOpSearch = searchUnits(index, "north", 1000, ["EOG Resources", "Ascent"]);
-check("search across two operators unions their matches", twoOpSearch.length > eogNorthFiltered.length && twoOpSearch.every((h) => ["EOG Resources", "Ascent"].includes(h.operator)), `${twoOpSearch.length} hits`);
+check("a unit excluded by the filter is not findable by its own name", searchUnits(index, "Bowerston North", 1000, ["EQT"]).length === 0 && searchUnits(index, "Bowerston North", 1000, ["EOG"]).length > 0);
+const twoOpSearch = searchUnits(index, "north", 1000, ["EOG", "Ascent"]);
+check("search across two operators unions their matches", twoOpSearch.length > eogNorthFiltered.length && twoOpSearch.every((h) => ["EOG", "Ascent"].includes(h.operator)), `${twoOpSearch.length} hits`);
 check("an empty selection leaves search unnarrowed", searchUnits(index, "north", 1000, []).length === allNorth.length);
 
 console.log(failures ? `\n${failures} unit search check(s) FAILED` : "\nUnit search: all checks passed");

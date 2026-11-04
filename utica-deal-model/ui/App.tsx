@@ -14,6 +14,8 @@ import { CostsTaxes } from "./screens/CostsTaxes";
 import { CarryDale } from "./screens/CarryDale";
 import { Results } from "./screens/Results";
 import { Sensitivities } from "./screens/Sensitivities";
+import { UnitAnalysis, type UnitAnalysisProps } from "./screens/UnitAnalysis";
+import { safeFileStem } from "./format/csv";
 import { Banner } from "./components/fields";
 import { FootnoteScope, FootnoteList } from "./components/footnotes";
 import { Logo } from "./components/Logo";
@@ -22,6 +24,7 @@ import { fmtPct, fmtMultiple } from "./format/format";
 const TABS: { key: TabKey; label: string }[] = [
   { key: "development", label: "Development" }, { key: "pricing", label: "Pricing & NGL" },
   { key: "costs", label: "Costs & Taxes" }, { key: "carry", label: "Carry & Dale" }, { key: "results", label: "Results" }, { key: "sensitivities", label: "Sensitivities" },
+  { key: "units", label: "Unit Analysis" },
 ];
 
 export interface AppBrand { title: string; subtitle: string }
@@ -32,8 +35,15 @@ const DEFAULT_BRAND: AppBrand = { title: "Utica Deal Model", subtitle: "Acreage 
  * renders the module switch under the brand and hides this module (keeping its
  * state mounted) while another module is active. No behavior below changes.
  */
-export function App({ data, initial, restoreDraft = true, moduleNav, hidden = false, brand = DEFAULT_BRAND }: {
+const NO_UNITS: UnitAnalysisProps = { rows: [], onRemove: () => undefined, onClear: () => undefined };
+
+/**
+ * `unitAnalysis` is the shell's GIS unit selection, shown on the Unit Analysis
+ * tab; `focusTab` lets the shell open a tab (a new `n` each time it asks).
+ */
+export function App({ data, initial, restoreDraft = true, moduleNav, hidden = false, brand = DEFAULT_BRAND, unitAnalysis = NO_UNITS, focusTab = null }: {
   data: EngineData; initial?: AppState; restoreDraft?: boolean; moduleNav?: React.ReactNode; hidden?: boolean; brand?: AppBrand;
+  unitAnalysis?: UnitAnalysisProps; focusTab?: { tab: TabKey; n: number } | null;
 }) {
   const [state, dispatch] = React.useReducer(reducer, undefined, () => {
     const base = initial ?? initialState(data.priceDeck);
@@ -42,6 +52,8 @@ export function App({ data, initial, restoreDraft = true, moduleNav, hidden = fa
     return d ? { ...base, inputs: d.inputs, ui: { ...base.ui, ...d.ui } } : base;
   });
   const [restored] = React.useState(() => !initial && restoreDraft && loadDraft() !== null);
+
+  React.useEffect(() => { if (focusTab) dispatch({ type: "SET_UI", patch: { tab: focusTab.tab } }); }, [focusTab?.n]);
 
   // Debounced working-draft autosave of the canonical inputs.
   React.useEffect(() => {
@@ -84,7 +96,7 @@ export function App({ data, initial, restoreDraft = true, moduleNav, hidden = fa
   };
 
   const r = state.results.base;
-  const visited = (k: TabKey) => (k === "results" || k === "sensitivities" ? Boolean(r) : true);
+  const visited = (k: TabKey) => (k === "results" || k === "sensitivities" ? Boolean(r) : k === "units" ? unitAnalysis.rows.length > 0 : true);
   return (
     <AppContext.Provider value={{ state, dispatch, data, tcOptions, busy, setBusy }}>
       <div className={`app${hidden ? " hidden" : ""}`} data-module="deal" aria-hidden={hidden || undefined}>
@@ -120,6 +132,7 @@ export function App({ data, initial, restoreDraft = true, moduleNav, hidden = fa
             {state.ui.tab === "carry" && <CarryDale />}
             {state.ui.tab === "results" && <Results />}
             {state.ui.tab === "sensitivities" && <Sensitivities />}
+            {state.ui.tab === "units" && <UnitAnalysis {...unitAnalysis} stem={safeFileStem(state.ui.opportunityName)} />}
             <FootnoteList />
             </FootnoteScope>
           </main>
